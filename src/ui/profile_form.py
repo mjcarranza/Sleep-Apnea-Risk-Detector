@@ -1,153 +1,9 @@
+from tkinter import Image, messagebox
 import customtkinter as ctk
-from tkinter import messagebox
-from PIL import Image, ImageTk
-import json
-import time
-import os
+from utils.data_utils import save_patient_data, load_patient_data, is_profile_complete
+from utils.custom_messagebox import CustomMessageBox
 
-DB_PATH = "data/patientData/patient_data.json"
-ICON_PATH = "assets/user_profile_icon.png"
-ctk.set_appearance_mode("dark")
-ctk.set_default_color_theme("dark-blue")
-
-
-def load_patient_data():
-    if not os.path.exists(DB_PATH):
-        return {}
-    with open(DB_PATH, "r") as file:
-        try:
-            data = json.load(file)
-            return data.get("patient", {})
-        except json.JSONDecodeError:
-            return {}
-
-def is_profile_complete():
-    required_fields = ["age", "sex", "weight_(kg)", "height_(cm)", "bmi", "neck_circumference_(cm)"]
-    data = load_patient_data()
-    return all(data.get(field) and str(data.get(field)).strip() for field in required_fields)
-
-def save_patient_data(data):
-    os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
-    with open(DB_PATH, "w") as file:
-        json.dump({"patient": data}, file, indent=4)
-
-class App(ctk.CTk):
-    def __init__(self):
-        super().__init__()
-        self.title("Sleep Apnea Detection System")
-        self.geometry("800x600")
-        self.minsize(600, 400)
-
-        self.grid_rowconfigure(0, weight=1)
-        self.grid_columnconfigure(0, weight=1)
-
-        self.frames = {}
-        for F in (StartScreen, ProfileForm, RecordingScreen):
-            frame = F(self)
-            self.frames[F] = frame
-            frame.grid(row=0, column=0, sticky="nsew")
-
-        self.show_frame(StartScreen if is_profile_complete() else ProfileForm)
-
-    def show_frame(self, container):
-        frame = self.frames[container]
-        frame.tkraise()
-        if hasattr(frame, "on_show"):
-            frame.on_show()
-
-class StartScreen(ctk.CTkFrame):
-    def __init__(self, parent):
-        super().__init__(parent)
-
-        # Configurar el layout general
-        self.grid_rowconfigure((0, 2), weight=1)  # Espacio arriba y abajo del botón
-        self.grid_rowconfigure(1, weight=0)       # Fila del botón
-        self.grid_columnconfigure(0, weight=1)
-
-        title = ctk.CTkLabel(self, text="Welcome to the Sleep Apnea Detection System", font=("Arial", 20))
-        title.grid(row=0, column=0, pady=20, sticky="n")
-
-        # Botón Record (centrado, redondo)
-        self.record_button = ctk.CTkButton(
-            self,
-            text="Record",
-            text_color="white",
-            fg_color="green",
-            hover_color="#009900",
-            font=ctk.CTkFont(size=20, weight="bold"),
-            width=150,
-            height=150,
-            corner_radius=75,  # Mitad del tamaño para que sea redondo
-            command=self.start_recording
-        )
-        self.record_button.grid(row=1, column=0, pady=20)
-
-        # Frame para botones en línea (abajo)
-        button_frame = ctk.CTkFrame(self, fg_color="transparent")
-        button_frame.grid(row=3, column=0, pady=20)
-
-        ctk.CTkButton(button_frame, text="Start Recording Session", width=200).grid(row=0, column=0, padx=10)
-        ctk.CTkButton(button_frame, text="View Session History", width=200).grid(row=0, column=1, padx=10)
-        ctk.CTkButton(button_frame, text="Access User Profile", width=200, command=lambda: parent.show_frame(ProfileForm)).grid(row=0, column=2, padx=10)
-
-    def start_recording(self):
-        self.master.show_frame(RecordingScreen)
-
-
-
-class RecordingScreen(ctk.CTkFrame):
-    def __init__(self, parent):
-        super().__init__(parent)
-        self.parent = parent
-        self.recording = False
-        self.start_time = None
-        self.timer_thread = None
-
-        self.grid_rowconfigure(0, weight=1)
-        self.grid_columnconfigure(0, weight=1)
-
-        # Cronómetro
-        self.timer_label = ctk.CTkLabel(self, text="00:00:00", font=ctk.CTkFont(size=40, weight="bold"))
-        self.timer_label.grid(row=0, column=0, pady=30)
-
-        # Botón Stop
-        self.stop_button = ctk.CTkButton(
-            self,
-            text="Stop",
-            text_color="white",
-            fg_color="red",
-            hover_color="#990000",
-            font=ctk.CTkFont(size=20, weight="bold"),
-            width=150,
-            height=60,
-            command=self.stop_recording
-        )
-        self.stop_button.grid(row=1, column=0)
-
-    def on_show(self):
-        self.start_recording()
-
-    def start_recording(self):
-        self.recording = True
-        self.start_time = time.time()
-        self.update_timer()
-
-    def update_timer(self):
-        if not self.recording:
-            return
-
-        elapsed = int(time.time() - self.start_time)
-        hours = elapsed // 3600
-        minutes = (elapsed % 3600) // 60
-        seconds = elapsed % 60
-
-        self.timer_label.configure(text=f"{hours:02d}:{minutes:02d}:{seconds:02d}")
-        self.after(1000, self.update_timer)  # Repite cada segundo
-
-    def stop_recording(self):
-        self.recording = False
-        self.parent.show_frame(StartScreen)
-
+ICON_PATH = "assets/user_profile_icon.png"  # Ajusta esta ruta si es necesario
 
 class ProfileForm(ctk.CTkFrame):
     def __init__(self, parent):
@@ -289,13 +145,13 @@ class ProfileForm(ctk.CTkFrame):
                 if isinstance(widget, ctk.CTkOptionMenu):
                     value = widget.get()
                     if value == "Select an option":
-                        messagebox.showwarning("Input Error", "Please select a valid option for Sex.")
+                        CustomMessageBox(self, title="Input Error", message="Please select a valid option for Sex.")
                         return
                     data[key] = value
                 else:
                     value = widget.get()
                     if not value.strip():
-                        messagebox.showwarning("Input Error", f"Please fill in the {label} field.")
+                        CustomMessageBox(self, title="Input Error", message=f"Please fill in the {label} field.")
                         return
                     
                     # Validación numérica de los campos específicos
@@ -303,7 +159,7 @@ class ProfileForm(ctk.CTkFrame):
                         try:
                             number = float(value)
                         except ValueError:
-                            messagebox.showwarning("Input Error", f"{label} must be a numeric value.")
+                            CustomMessageBox(self, title="Input Error", message=f"{label} must be a numeric value.")
                             return
 
                         # Validar los rangos permitidos
@@ -341,15 +197,9 @@ class ProfileForm(ctk.CTkFrame):
             self.is_editing = False
         else:
             # Volver al menú
-            self.parent.show_frame(StartScreen)
+            self.parent.show_frame("StartScreen")
 
     def set_fields_state(self, disabled=True):
         state = "disabled" if disabled else "normal"
         for widget in self.fields.values():
             widget.configure(state=state)
-
-
-
-if __name__ == "__main__":
-    app = App()
-    app.mainloop()
