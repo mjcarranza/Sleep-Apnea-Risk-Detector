@@ -20,52 +20,90 @@ class ProfileForm(ctk.CTkFrame):
         }
         self.is_editing = False
 
+        self.configure(fg_color="#1e1e2f")
+
         self.grid_columnconfigure(0, weight=1)
         self.grid_rowconfigure(0, weight=1)
 
-        title_frame = ctk.CTkFrame(self, fg_color="gray13")
+        title_frame = ctk.CTkFrame(self, fg_color="transparent")
         title_frame.pack(pady=20)
 
         try:
             icon = Image.open(ICON_PATH)
             icon = icon.resize((25, 25), Image.Resampling.LANCZOS)
             icon_tk = ctk.CTkImage(light_image=icon, dark_image=icon)
-            profile_icon_label = ctk.CTkLabel(title_frame, text="User Profile", image=icon_tk, compound="left", font=ctk.CTkFont(size=20, weight="bold"))
+            profile_icon_label = ctk.CTkLabel(
+                title_frame,
+                text="User Profile",
+                image=icon_tk,
+                compound="left",
+                font=ctk.CTkFont(size=24, weight="bold"),
+                text_color="white"
+            )
             profile_icon_label.pack()
         except Exception as e:
             print(f"Error loading icon: {e}")
-            icon_label = ctk.CTkLabel(title_frame, text="User Profile", font=ctk.CTkFont(size=20, weight="bold"))
+            icon_label = ctk.CTkLabel(title_frame, text="User Profile", font=ctk.CTkFont(size=24, weight="bold"), text_color="white")
             icon_label.pack()
 
-        form_frame = ctk.CTkFrame(self, fg_color="gray13")
+        form_frame = ctk.CTkFrame(self, fg_color="#2a2a3d", corner_radius=15)
         form_frame.pack(padx=40, pady=20, fill="both", expand=True)
 
         for label in self.field_keys.keys():
-            row = ctk.CTkFrame(form_frame)
+            row = ctk.CTkFrame(form_frame, fg_color="transparent")
             row.pack(fill="x", pady=5)
 
-            label_widget = ctk.CTkLabel(row, text=label + ":", width=180, anchor="w")
+            label_widget = ctk.CTkLabel(
+                row,
+                text=label + ":",
+                width=180,
+                anchor="w",
+                text_color="white",
+                font=ctk.CTkFont(size=16)
+            )
             label_widget.pack(side="left")
 
             if label == "Sex":
-                entry = ctk.CTkOptionMenu(row, values=["Select an option", "Male", "Female", "Other"])
+                entry = ctk.CTkOptionMenu(
+                    row,
+                    values=["Select an option", "Male", "Female", "Other"],
+                    fg_color="#3a3a50",
+                    text_color="white",
+                    button_color="#7b4fff",
+                    dropdown_fg_color="#3a3a50",
+                    dropdown_text_color="white",
+                    dropdown_hover_color="#4f4f7a"
+                )
                 entry.set("Select an option")
             else:
-                entry = ctk.CTkEntry(row)
+                entry = ctk.CTkEntry(
+                    row,
+                    fg_color="#3a3a50",
+                    text_color="white",
+                    placeholder_text="Enter value",
+                    border_color="#7b4fff",
+                    border_width=1
+                )
 
-            entry.pack(side="left", fill="x", expand=True)
+            entry.pack(side="left", fill="x", expand=True, padx=5)
             if label in ["Weight (kg)", "Height (cm)"]:
                 entry.bind("<KeyRelease>", lambda event: self.update_bmi())
             self.fields[label] = entry
 
-        self.buttons_frame = ctk.CTkFrame(self, fg_color="gray13")
+        self.buttons_frame = ctk.CTkFrame(self, fg_color="transparent")
         self.buttons_frame.pack(pady=10)
 
         self.edit_save_button = ctk.CTkButton(
             self.buttons_frame, 
             text="Edit", 
-            command=self.toggle_edit_save, 
-            width=200
+            command=self.toggle_edit_save,
+            width=200,
+            height=50,
+            corner_radius=15,
+            font=ctk.CTkFont(size=16, weight="bold"),
+            text_color="white",
+            fg_color="#7b4fff",
+            hover_color="#a175ff"
         )
         self.edit_save_button.grid(row=0, column=0, padx=10)
 
@@ -73,10 +111,18 @@ class ProfileForm(ctk.CTkFrame):
             self.buttons_frame,
             text="Back to Main Menu",
             command=self.cancel_or_back,
-            width=200
+            width=200,
+            height=50,
+            corner_radius=15,
+            font=ctk.CTkFont(size=16, weight="bold"),
+            text_color="white",
+            fg_color="#555555",
+            hover_color="#777777"
         )
         self.cancel_back_button.grid(row=0, column=1, padx=10)
         self.cancel_back_button.grid_remove()  # Ocultarlo inicialmente
+
+    # --- (resto de métodos sin cambios funcionales, solo diseño) ---
 
     def update_bmi(self, *args):
         try:
@@ -97,12 +143,10 @@ class ProfileForm(ctk.CTkFrame):
             self.fields["BMI"].insert(0, "")
             self.fields["BMI"].configure(state="disabled")
 
-
     def on_show(self):
         self.load_data_into_form()
 
         if is_profile_complete():
-            # Si los datos están completos, iniciar en modo solo lectura
             self.set_fields_state(disabled=True)
             self.edit_save_button.configure(text="Edit")
             self.edit_save_button.grid()
@@ -110,11 +154,10 @@ class ProfileForm(ctk.CTkFrame):
             self.cancel_back_button.grid()
             self.is_editing = False
         else:
-            # Si los datos están incompletos, iniciar en modo edición
             self.set_fields_state(disabled=False)
             self.edit_save_button.configure(text="Save Data")
             self.edit_save_button.grid()
-            self.cancel_back_button.grid_remove()  # Ocultar botón de cancel
+            self.cancel_back_button.grid_remove()
             self.is_editing = True
 
     def load_data_into_form(self):
@@ -153,8 +196,6 @@ class ProfileForm(ctk.CTkFrame):
                     if not value.strip():
                         CustomMessageBox(self, title="Input Error", message=f"Please fill in the {label} field.")
                         return
-                    
-                    # Validación numérica de los campos específicos
                     if key in ["age", "weight_(kg)", "height_(cm)", "neck_circumference_(cm)"]:
                         try:
                             number = float(value)
@@ -162,7 +203,6 @@ class ProfileForm(ctk.CTkFrame):
                             CustomMessageBox(self, title="Input Error", message=f"{label} must be a numeric value.")
                             return
 
-                        # Validar los rangos permitidos
                         if key == "age" and not (0 <= number <= 100):
                             messagebox.showwarning("Input Error", "Age must be between 0 and 100.")
                             return
@@ -179,7 +219,6 @@ class ProfileForm(ctk.CTkFrame):
 
             save_patient_data(data)
             messagebox.showinfo("Success", "Patient data saved successfully.")
-            # Después de guardar exitosamente
             self.load_data_into_form()
             self.set_fields_state(disabled=True)
             self.edit_save_button.configure(text="Edit")
@@ -189,14 +228,12 @@ class ProfileForm(ctk.CTkFrame):
 
     def cancel_or_back(self):
         if self.is_editing:
-            # Cancelar edición
             self.load_data_into_form()
             self.set_fields_state(disabled=True)
             self.edit_save_button.configure(text="Edit")
             self.cancel_back_button.configure(text="Back to Main Menu")
             self.is_editing = False
         else:
-            # Volver al menú
             self.parent.show_frame("StartScreen")
 
     def set_fields_state(self, disabled=True):
