@@ -8,6 +8,7 @@ from ui.recording_screen import RecordingScreen
 from utils.data_utils import is_profile_complete
 
 
+
 class App(ctk.CTk):
     def __init__(self):
         super().__init__()
@@ -51,9 +52,3 @@ if __name__ == "__main__":
     ctk.set_default_color_theme("dark-blue")
     app = App()
     app.mainloop()
-
-
-
-'''
-CustomMessageBox(self, title="Session Saved", message="This session has been saved.")
-'''

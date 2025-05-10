@@ -1,10 +1,17 @@
+import os
 import customtkinter as ctk
+import soundfile as sf
+import json
 import time
 import sounddevice as sd
+import traceback
 import numpy as np
-from dataAcquisition.microphoneInput import record_audio
 from tkinter import messagebox
+from dataAcquisition.microphoneInput import get_next_session_number, increment_session_number
 from utils.custom_messagebox import CustomMessageBox
+from signalProcessing.process_and_label_audio import process_audio_and_label # forma de importar metodos desde otras carpetas
+
+DB_PATH = "data/patientData/patient_data.json"
 
 # Al principio de la clase agrega esta función de color:
 def get_volume_color(volume):
@@ -21,6 +28,9 @@ class RecordingScreen(ctk.CTkFrame):
         self.start_time = None
         self.stream = None
         self.volume_level = 0.0
+        self.audio_data = []
+        self.sample_rate = 44100
+
 
         self.configure(fg_color="#1e1e2f")  # Fondo oscuro general
 
@@ -131,6 +141,7 @@ class RecordingScreen(ctk.CTkFrame):
             self.stop_recording()
 
     def start_recording(self):
+        self.audio_data = []  # Limpia grabaciones anteriores
         self.recording = True
         self.timer_running = True
         self.start_time = time.time()
@@ -151,7 +162,9 @@ class RecordingScreen(ctk.CTkFrame):
         if status:
             print(status)
         volume = np.linalg.norm(indata) / np.sqrt(len(indata))
-        self.volume_level = min(volume * 5, 1.0)  # Ajuste visual
+        self.volume_level = min(volume * 5, 1.0)
+        self.audio_data.append(indata.copy())  # ← Guarda fragmento de audio
+
 
     def start_audio_stream(self):
         mic_index = self.get_selected_device_index()
@@ -202,10 +215,55 @@ class RecordingScreen(ctk.CTkFrame):
 
             if mic_index is not None:
                 # Guardado asincrónico con after
-                self.after(100, lambda: self.save_and_return(duration, mic_index))
+                self.after(100, self.save_buffered_audio)
             else:
                 CustomMessageBox(self, title="Error", message="Invalid microphone selected.")
                 self.parent.show_frame("StartScreen")
+
+    def save_buffered_audio(self):
+        try:
+            audio_np = np.concatenate(self.audio_data, axis=0)
+            session_num = get_next_session_number()
+
+            session_dir = os.path.join("data", "raw", f"Session{session_num}")
+            os.makedirs(session_dir, exist_ok=True)
+
+            file_path = os.path.join(session_dir, "audio.wav")
+            sf.write(file_path, audio_np, self.sample_rate)
+
+            # Verifica que el archivo de audio fue guardado correctamente
+            if not os.path.isfile(file_path):
+                raise FileNotFoundError(f"Archivo de audio no encontrado: {file_path}")
+
+            # Asegura que la carpeta de salida para los CSV existe
+            processed_dir = os.path.join("data", "processed")
+            os.makedirs(processed_dir, exist_ok=True)
+
+            output_csv = os.path.join(processed_dir, f"Session{session_num}_segments.csv")
+
+            # Procesa el audio y guarda resultados en CSV
+            process_audio_and_label(
+                wav_path=file_path,
+                output_csv=output_csv
+            )
+
+            increment_session_number()
+            CustomMessageBox(self, title="Session Saved", message="This session has been saved.")
+
+        except Exception as e:
+            error_trace = traceback.format_exc()
+            CustomMessageBox(
+                self,
+                title="Error",
+                message=f"Error saving session:\n{e}\n\nTraceback:\n{error_trace}"
+            )
+            print(str(e) + "\n" + error_trace)
+
+        finally:
+            self.record_button.configure(state="normal")
+            self.cancel_button.configure(state="normal")
+            self.parent.show_frame("StartScreen")
+
 
 
     def confirm_cancel(self):
@@ -222,16 +280,3 @@ class RecordingScreen(ctk.CTkFrame):
             self.stream = None
         self.audio_level.set(0)
         self.parent.show_frame("StartScreen")
-
-    def save_and_return(self, duration, mic_index):
-        try:
-            record_audio(duration=duration, mic_index=mic_index)
-            CustomMessageBox(self, title="Session Saved", message="This session has been saved.")
-        except Exception as e:
-            CustomMessageBox(self, title="Error", message=f"Error saving session:\n{e}")
-        finally:
-            self.record_button.configure(state="normal")
-            self.cancel_button.configure(state="normal")
-            self.parent.show_frame("StartScreen")
-
-    

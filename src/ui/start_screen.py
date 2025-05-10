@@ -15,7 +15,7 @@ class StartScreen(ctk.CTkFrame):
         # Título
         self.title = ctk.CTkLabel(
             self,
-            text="Sleep Apnea Detection",
+            text="Sleep Apnea Detection System",
             font=ctk.CTkFont(size=28, weight="bold"),
             text_color="#CFCFFF"
         )
