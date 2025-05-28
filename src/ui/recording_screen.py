@@ -9,7 +9,7 @@ import numpy as np
 from tkinter import messagebox
 from dataAcquisition.microphoneInput import get_next_session_number, increment_session_number
 from utils.custom_messagebox import CustomMessageBox
-from signalProcessing.process_and_label_audio import process_audio_and_label # forma de importar metodos desde otras carpetas
+from signalProcessing.process_and_label_audio import process_audio_and_update_dataset # forma de importar metodos desde otras carpetas
 
 DB_PATH = "data/patientData/patient_data.json"
 
@@ -242,9 +242,8 @@ class RecordingScreen(ctk.CTkFrame):
             output_csv = os.path.join(processed_dir, f"Session{session_num}_segments.csv")
 
             # Procesa el audio y guarda resultados en CSV
-            process_audio_and_label(
-                wav_path=file_path,
-                output_csv=output_csv
+            process_audio_and_update_dataset(
+                wav_path=file_path
             )
 
             increment_session_number()

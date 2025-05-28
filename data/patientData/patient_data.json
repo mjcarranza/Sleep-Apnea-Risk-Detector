@@ -1,10 +1,10 @@
 {
     "patient": {
-        "age": "25",
+        "age": "48",
         "sex": "Male",
-        "weight_(kg)": "73",
+        "weight_(kg)": "80",
         "height_(cm)": "172",
-        "bmi": "24.68",
+        "bmi": "27.04",
         "neck_circumference_(cm)": "35",
         "recordedSesions": 6
     }
