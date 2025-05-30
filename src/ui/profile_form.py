@@ -1,4 +1,5 @@
-from tkinter import Image, messagebox
+from tkinter import messagebox
+from PIL import Image
 import customtkinter as ctk
 from utils.data_utils import save_patient_data, load_patient_data, is_profile_complete
 from utils.custom_messagebox import CustomMessageBox

@@ -57,7 +57,8 @@ class StartScreen(ctk.CTkFrame):
             height=40,
             fg_color="#44445A",
             hover_color="#5A5A75",
-            corner_radius=12
+            corner_radius=12,
+            command=lambda: self.parent.show_frame("DataVisualization")
         )
         self.history_button.grid(row=0, column=0, padx=10, pady=10)
 

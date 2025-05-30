@@ -43,6 +43,7 @@ def process_audio_and_update_dataset(wav_path, sample_rate=16000, segment_durati
     age = int(patient_data["age"])
     gender_str = patient_data["sex"]
     bmi = float(patient_data["bmi"])
+    session = int(patient_data["recordedSesions"])
 
     # Opcional: convertir género a formato numérico (para IA)
     if gender_str.lower() == "female":
@@ -78,6 +79,7 @@ def process_audio_and_update_dataset(wav_path, sample_rate=16000, segment_durati
 
             # Fila a guardar
             row = {
+                'Sleep_Session':session,
                 'Start_Time': i // sample_rate,
                 'End_Time': (i + samples_per_segment) // sample_rate,
                 'Age': age,
