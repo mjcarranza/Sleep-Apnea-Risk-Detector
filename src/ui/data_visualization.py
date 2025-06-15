@@ -225,6 +225,8 @@ class DataVisualization(ctk.CTkFrame):
                     canvas_wave.draw()
                     canvas_wave.get_tk_widget().pack(fill="both", expand=True)
 
+                    plt.close(fig_wave)  # <- CIERRA LA FIGURA PARA EVITAR WARNINGS Y FUGAS DE MEMORIA
+
                 except Exception as e:
                     print(f"[ERROR] Al procesar el audio: {e}")
 
@@ -241,13 +243,6 @@ class DataVisualization(ctk.CTkFrame):
                 )
                 play_button.configure(command=lambda p=audio_path, b=play_button: self.toggle_audio(p, b))
                 play_button.pack(pady=(5, 10))
-
-    def generate_report_for_session(self, session_id):
-        try:
-            generate_report(session_id)
-            print(f"[INFO] Reporte generado para la sesión {session_id}")
-        except Exception as e:
-            print(f"[ERROR] No se pudo generar el reporte para la sesión {session_id}: {e}")
 
 
     def toggle_audio(self, path, button):

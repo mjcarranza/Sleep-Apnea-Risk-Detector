@@ -9,7 +9,7 @@ def get_next_session_number():
     with open(DB_PATH, "r") as f:
         db = json.load(f)
 
-    session_num = db["patient"]["recordedSesions"]
+    session_num = db["patient"]["recordedSessions"]
     return session_num
 
 def increment_session_number():

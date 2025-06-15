@@ -1,12 +1,12 @@
 {
     "patient": {
-        "name": "Mario Carranza",
+        "name": "Mario Carranza Castillo",
         "age": "25",
         "sex": "Male",
         "weight_(kg)": "80",
         "height_(cm)": "172",
         "bmi": "27.04",
         "neck_circumference_(cm)": "35",
-        "recordedSesions": 7
+        "recordedSessions": "2"
     }
 }

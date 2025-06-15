@@ -1,13 +1,15 @@
+import tkinter as tk
+from tkinter import filedialog
 from reportlab.lib.pagesizes import A4
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet
-from utils.helpers import load_patient_data  # Asumiendo que tienes esta función ya hecha
-from ui.paths import CSV_PATH, JSON_PATH, REPORT_FOLDER  # Asegúrate de tener rutas centralizadas
 from reportlab.lib import colors
 import pandas as pd
-from fpdf import FPDF
 import json
 import os
+
+from utils.helpers import load_patient_data  # Asegúrate que esta función esté correctamente implementada
+from ui.paths import CSV_PATH, JSON_PATH, REPORT_FOLDER  # Si tienes estas rutas centralizadas
 
 JSON_PATH = "data/patientData/patient_data.json"
 CSV_PATH = "data/processed/processed_patient_data.csv"
@@ -29,9 +31,22 @@ def generate_report(session_number):
     # Filtrar eventos de apnea
     apnea_events = session_df[session_df["Has_Apnea"] == True][["Start_Time", "End_Time", "Snoring", "Treatment_Required"]]
 
-    # Preparar PDF
-    report_path = os.path.join(OUTPUT_DIR, f"Session{session_number}_report.pdf")
-    doc = SimpleDocTemplate(report_path, pagesize=A4)
+    # Abrir cuadro de diálogo para seleccionar dónde guardar el archivo
+    root = tk.Tk()
+    root.withdraw()  # Oculta la ventana principal de Tkinter
+
+    file_path = filedialog.asksaveasfilename(
+        defaultextension=".pdf",
+        filetypes=[("PDF files", "*.pdf")],
+        initialfile=f"Session{session_number}_report.pdf",
+        title="Save Report As"
+    )
+
+    if not file_path:  # Si el usuario cancela
+        print("[INFO] Save operation cancelled.")
+        return
+
+    doc = SimpleDocTemplate(file_path, pagesize=A4)
     elements = []
     styles = getSampleStyleSheet()
 
@@ -67,7 +82,7 @@ def generate_report(session_number):
         elements.append(Paragraph("No apnea events were detected in this session.", styles["Normal"]))
 
     doc.build(elements)
-    print(f"Reporte generado: {report_path}")
+    print(f"[INFO] Report saved to: {file_path}")
 
 
 def generate_full_report():
@@ -83,12 +98,23 @@ def generate_full_report():
     with open(JSON_PATH, "r") as f:
         patient_data = json.load(f)["patient"]
 
-    # Crear carpeta si no existe
-    os.makedirs(REPORT_FOLDER, exist_ok=True)
-    report_path = os.path.join(REPORT_FOLDER, "Full_Report.pdf")
+    # Abrir cuadro de diálogo para seleccionar dónde guardar el archivo
+    root = tk.Tk()
+    root.withdraw()  # Oculta la ventana principal de Tkinter
+
+    file_path = filedialog.asksaveasfilename(
+        defaultextension=".pdf",
+        filetypes=[("PDF files", "*.pdf")],
+        initialfile="Full_Report.pdf",
+        title="Save Full Report As"
+    )
+
+    if not file_path:  # Si el usuario cancela
+        print("[INFO] Save operation cancelled.")
+        return
 
     # Estilos y documento
-    doc = SimpleDocTemplate(report_path, pagesize=A4)
+    doc = SimpleDocTemplate(file_path, pagesize=A4)
     elements = []
     styles = getSampleStyleSheet()
 
@@ -135,4 +161,4 @@ def generate_full_report():
         elements.append(Spacer(1, 20))
 
     doc.build(elements)
-    print(f"[INFO] Full report saved to: {report_path}")
+    print(f"[INFO] Full report saved to: {file_path}")

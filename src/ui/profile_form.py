@@ -12,6 +12,7 @@ class ProfileForm(ctk.CTkFrame):
         self.parent = parent
         self.fields = {}
         self.field_keys = {
+            "Name":"name",
             "Age": "age",
             "Sex": "sex",
             "Weight (kg)": "weight_(kg)",
@@ -33,19 +34,24 @@ class ProfileForm(ctk.CTkFrame):
             icon = Image.open(ICON_PATH)
             icon = icon.resize((25, 25), Image.Resampling.LANCZOS)
             icon_tk = ctk.CTkImage(light_image=icon, dark_image=icon)
-            profile_icon_label = ctk.CTkLabel(
+            self.profile_icon_label = ctk.CTkLabel(   # <-- Aquí la corrección
                 title_frame,
-                text="User Profile",
+                text=" User Profile",
                 image=icon_tk,
                 compound="left",
                 font=ctk.CTkFont(size=24, weight="bold"),
                 text_color="white"
             )
-            profile_icon_label.pack()
+            self.profile_icon_label.pack()
         except Exception as e:
             print(f"Error loading icon: {e}")
-            icon_label = ctk.CTkLabel(title_frame, text="User Profile", font=ctk.CTkFont(size=24, weight="bold"), text_color="white")
-            icon_label.pack()
+            self.profile_icon_label = ctk.CTkLabel(  # <-- También aquí
+                title_frame,
+                text="User Profile",
+                font=ctk.CTkFont(size=24, weight="bold"),
+                text_color="white"
+            )
+            self.profile_icon_label.pack()
 
         form_frame = ctk.CTkFrame(self, fg_color="#2a2a3d", corner_radius=15)
         form_frame.pack(padx=40, pady=20, fill="both", expand=True)
@@ -123,6 +129,8 @@ class ProfileForm(ctk.CTkFrame):
         self.cancel_back_button.grid(row=0, column=1, padx=10)
         self.cancel_back_button.grid_remove()  # Ocultarlo inicialmente
 
+        self.update_profile_label()
+
     # --- (resto de métodos sin cambios funcionales, solo diseño) ---
 
     def update_bmi(self, *args):
@@ -175,6 +183,12 @@ class ProfileForm(ctk.CTkFrame):
             else:
                 entry.delete(0, "end")
                 entry.insert(0, value)
+    
+    def update_profile_label(self):
+        patient_data = load_patient_data()
+        patient_name = patient_data.get("name", "Unknown User")  # "name" debe coincidir con la clave en tu JSON
+        self.profile_icon_label.configure(text=f" {patient_name}")
+
 
     def toggle_edit_save(self):
         if not self.is_editing:
@@ -197,29 +211,38 @@ class ProfileForm(ctk.CTkFrame):
                     if not value.strip():
                         CustomMessageBox(self, title="Input Error", message=f"Please fill in the {label} field.")
                         return
+                    if key == "name" and not value.strip():
+                        CustomMessageBox(self, title="Input Error", message="Name cannot be empty.")
+                        return
                     if key in ["age", "weight_(kg)", "height_(cm)", "neck_circumference_(cm)"]:
                         try:
                             number = float(value)
                         except ValueError:
                             CustomMessageBox(self, title="Input Error", message=f"{label} must be a numeric value.")
                             return
-
+                        
                         if key == "age" and not (0 <= number <= 100):
-                            messagebox.showwarning("Input Error", "Age must be between 0 and 100.")
+                            CustomMessageBox(self, title="Input Error", message=f"{label} must be between 0 and 100.")
                             return
                         if key == "weight_(kg)" and not (0 <= number <= 500):
-                            messagebox.showwarning("Input Error", "Weight must be between 0 and 500 kg.")
+                            CustomMessageBox(self, title="Input Error", message=f"{label} must be between 0 and 500 kg.")
                             return
                         if key == "height_(cm)" and not (0 <= number <= 300):
-                            messagebox.showwarning("Input Error", "Height must be between 0 and 300 cm.")
+                            CustomMessageBox(self, title="Input Error", message=f"{label} must be between 0 and 300 cm.")
                             return
                         if key == "neck_circumference_(cm)" and not (0 <= number <= 100):
-                            messagebox.showwarning("Input Error", "Neck circumference must be between 0 and 100 cm.")
+                            CustomMessageBox(self, title="Input Error", message=f"{label} Age must be between 0 and 100 cm.")
                             return
                     data[key] = value
 
-            save_patient_data(data)
-            messagebox.showinfo("Success", "Patient data saved successfully.")
+            # Cargar datos previos para no sobrescribir "recordedSessions"
+            patient_data = load_patient_data()
+            recorded_sessions = patient_data.get("recordedSessions", 0)  # valor por defecto si no existe
+            data["recordedSessions"] = recorded_sessions  # mantener el campo
+
+            save_patient_data(data)  # guarda con "recordedSessions" intacto
+            CustomMessageBox(self, title="Success", message= "Patient data saved successfully.")
+            
             self.load_data_into_form()
             self.set_fields_state(disabled=True)
             self.edit_save_button.configure(text="Edit")
