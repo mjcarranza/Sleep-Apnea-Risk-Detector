@@ -40,30 +40,31 @@ def extract_frequency_features(segment, sample_rate):
     return snore_energy
 
 def calculate_decibels(segment):
-    """Calcula el nivel RMS en decibeles relativo al máximo posible (0 dBFS)"""
     rms = np.sqrt(np.mean(segment**2))
     if rms == 0:
-        return -np.inf  # Silencio absoluto
+        return -np.inf
     return 20 * np.log10(rms)
 
+def rescale_zcr(zcr_value, old_min=0.0, old_max=0.15, new_min=0.2, new_max=0.5):
+    """Reescala ZCR para que coincida con el rango esperado por el modelo."""
+    scaled = (zcr_value - old_min) / (old_max - old_min)
+    scaled = np.clip(scaled, 0, 1)  # Limitar entre 0 y 1
+    return new_min + (scaled * (new_max - new_min))
+
 def detect_snoring(rms_value, snore_energy, noise_threshold, decibel_level, min_decibel_threshold=-18, energy_threshold=0.1):
-    """
-    Detecta ronquidos si:
-    1. Supera el umbral de ruido RMS.
-    2. La energía en banda típica de ronquido es suficiente.
-    3. El nivel en decibeles es mayor al umbral (40 dB por defecto).
-    """
     return (rms_value > noise_threshold) and \
            (snore_energy > energy_threshold) and \
            (decibel_level <= min_decibel_threshold)
 
 def extract_features(segment, sample_rate):
     rms = np.mean(librosa.feature.rms(y=segment))
-    zcr = np.mean(librosa.feature.zero_crossing_rate(y=segment))
+    zcr = np.mean(librosa.feature.zero_crossing_rate(y=segment, frame_length=512, hop_length=256))
+    zcr_rescaled = rescale_zcr(zcr)  # Ajuste al rango esperado
     spectral_centroid = np.mean(librosa.feature.spectral_centroid(y=segment, sr=sample_rate))
     snore_energy = extract_frequency_features(segment, sample_rate)
     decibel_level = calculate_decibels(segment)
-    return rms, zcr, spectral_centroid, snore_energy, decibel_level
+    print(f"[DEBUG] ZCR original: {zcr:.5f} | ZCR reescalado (Nasal_Airflow): {zcr_rescaled:.5f}")
+    return rms, zcr_rescaled, spectral_centroid, snore_energy, decibel_level
 
 def process_audio_and_update_dataset(wav_path, sample_rate=16000, segment_duration=5):
     print(f"[INFO] Cargando audio desde {wav_path}")
@@ -96,7 +97,7 @@ def process_audio_and_update_dataset(wav_path, sample_rate=16000, segment_durati
             segment = segment / np.max(np.abs(segment))
 
             snoring_rms, nasal_airflow, spectral_centroid, snore_energy, decibel_level = extract_features(segment, sample_rate)
-            print("decibel level> ",decibel_level)
+            print(f"[DEBUG] Nivel Decibeles: {decibel_level:.2f} dB")
             has_snoring = detect_snoring(snoring_rms, snore_energy, noise_threshold, decibel_level)
 
             input_data = pd.DataFrame([{

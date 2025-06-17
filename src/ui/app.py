@@ -1,4 +1,4 @@
-#TERMS_PATH = "data/config/terms.json"
+
 import customtkinter as ctk
 import sys
 import os
@@ -11,7 +11,7 @@ from ui.recording_screen import RecordingScreen
 from ui.data_visualization import DataVisualization
 from ui.terms_screen import TermsAndConditionsScreen
 from utils.data_utils import is_profile_complete
-from ui.paths import TERMS_PATH  # Ahora sí toma de paths.py
+from ui.paths import TERMS_PATH
 
 class App(ctk.CTk):
     def __init__(self):

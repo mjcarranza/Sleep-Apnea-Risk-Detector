@@ -1,7 +1,6 @@
 import os
 import customtkinter as ctk
 import soundfile as sf
-import json
 import time
 import sounddevice as sd
 import traceback

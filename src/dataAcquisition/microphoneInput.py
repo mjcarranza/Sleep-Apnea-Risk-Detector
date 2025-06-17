@@ -1,6 +1,4 @@
-import sounddevice as sd
-import soundfile as sf
-import os
+
 import json
 
 DB_PATH = "data/patientData/patient_data.json"

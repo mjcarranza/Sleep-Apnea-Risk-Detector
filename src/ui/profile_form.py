@@ -4,7 +4,7 @@ import customtkinter as ctk
 from utils.data_utils import save_patient_data, load_patient_data, is_profile_complete
 from utils.custom_messagebox import CustomMessageBox
 
-ICON_PATH = "assets/user_profile_icon.png"  # Ajusta esta ruta si es necesario
+ICON_PATH = "assets/user_profile_icon.png"
 
 class ProfileForm(ctk.CTkFrame):
     def __init__(self, parent):
@@ -12,13 +12,16 @@ class ProfileForm(ctk.CTkFrame):
         self.parent = parent
         self.fields = {}
         self.field_keys = {
-            "Name":"name",
+            "Name": "name",
             "Age": "age",
             "Sex": "sex",
             "Weight (kg)": "weight_(kg)",
             "Height (cm)": "height_(cm)",
             "BMI": "bmi",
-            "Neck Circumference (cm)": "neck_circumference_(cm)"
+            "Neck Circumference (cm)": "neck_circumference_(cm)",
+            "Regular Alcohol Use": "regular_alcohol_use",
+            "Regular Sleep Difficulties": "regular_sleep_difficulties",
+            "Familiar Apnea History": "familiar_apnea_history"
         }
         self.is_editing = False
 
@@ -34,7 +37,7 @@ class ProfileForm(ctk.CTkFrame):
             icon = Image.open(ICON_PATH)
             icon = icon.resize((25, 25), Image.Resampling.LANCZOS)
             icon_tk = ctk.CTkImage(light_image=icon, dark_image=icon)
-            self.profile_icon_label = ctk.CTkLabel(   # <-- Aquí la corrección
+            self.profile_icon_label = ctk.CTkLabel(
                 title_frame,
                 text=" User Profile",
                 image=icon_tk,
@@ -45,7 +48,7 @@ class ProfileForm(ctk.CTkFrame):
             self.profile_icon_label.pack()
         except Exception as e:
             print(f"Error loading icon: {e}")
-            self.profile_icon_label = ctk.CTkLabel(  # <-- También aquí
+            self.profile_icon_label = ctk.CTkLabel(
                 title_frame,
                 text="User Profile",
                 font=ctk.CTkFont(size=24, weight="bold"),
@@ -82,6 +85,18 @@ class ProfileForm(ctk.CTkFrame):
                     dropdown_hover_color="#4f4f7a"
                 )
                 entry.set("Select an option")
+            elif label in ["Regular Alcohol Use", "Regular Sleep Difficulties", "Familiar Apnea History"]:
+                entry = ctk.CTkOptionMenu(
+                    row,
+                    values=["Select an option", "True", "False"],
+                    fg_color="#3a3a50",
+                    text_color="white",
+                    button_color="#7b4fff",
+                    dropdown_fg_color="#3a3a50",
+                    dropdown_text_color="white",
+                    dropdown_hover_color="#4f4f7a"
+                )
+                entry.set("Select an option")
             else:
                 entry = ctk.CTkEntry(
                     row,
@@ -101,8 +116,8 @@ class ProfileForm(ctk.CTkFrame):
         self.buttons_frame.pack(pady=10)
 
         self.edit_save_button = ctk.CTkButton(
-            self.buttons_frame, 
-            text="Edit", 
+            self.buttons_frame,
+            text="Edit",
             command=self.toggle_edit_save,
             width=200,
             height=50,
@@ -127,11 +142,9 @@ class ProfileForm(ctk.CTkFrame):
             hover_color="#777777"
         )
         self.cancel_back_button.grid(row=0, column=1, padx=10)
-        self.cancel_back_button.grid_remove()  # Ocultarlo inicialmente
+        self.cancel_back_button.grid_remove()
 
         self.update_profile_label()
-
-    # --- (resto de métodos sin cambios funcionales, solo diseño) ---
 
     def update_bmi(self, *args):
         try:
@@ -158,14 +171,12 @@ class ProfileForm(ctk.CTkFrame):
         if is_profile_complete():
             self.set_fields_state(disabled=True)
             self.edit_save_button.configure(text="Edit")
-            self.edit_save_button.grid()
             self.cancel_back_button.configure(text="Back to Main Menu")
             self.cancel_back_button.grid()
             self.is_editing = False
         else:
             self.set_fields_state(disabled=False)
             self.edit_save_button.configure(text="Save Data")
-            self.edit_save_button.grid()
             self.cancel_back_button.grid_remove()
             self.is_editing = True
 
@@ -183,12 +194,11 @@ class ProfileForm(ctk.CTkFrame):
             else:
                 entry.delete(0, "end")
                 entry.insert(0, value)
-    
+
     def update_profile_label(self):
         patient_data = load_patient_data()
-        patient_name = patient_data.get("name", "Unknown User")  # "name" debe coincidir con la clave en tu JSON
+        patient_name = patient_data.get("name", "Unknown User")
         self.profile_icon_label.configure(text=f" {patient_name}")
-
 
     def toggle_edit_save(self):
         if not self.is_editing:
@@ -203,7 +213,7 @@ class ProfileForm(ctk.CTkFrame):
                 if isinstance(widget, ctk.CTkOptionMenu):
                     value = widget.get()
                     if value == "Select an option":
-                        CustomMessageBox(self, title="Input Error", message="Please select a valid option for Sex.")
+                        CustomMessageBox(self, title="Input Error", message=f"Please select a valid option for {label}.")
                         return
                     data[key] = value
                 else:
@@ -220,7 +230,6 @@ class ProfileForm(ctk.CTkFrame):
                         except ValueError:
                             CustomMessageBox(self, title="Input Error", message=f"{label} must be a numeric value.")
                             return
-                        
                         if key == "age" and not (0 <= number <= 100):
                             CustomMessageBox(self, title="Input Error", message=f"{label} must be between 0 and 100.")
                             return
@@ -231,18 +240,17 @@ class ProfileForm(ctk.CTkFrame):
                             CustomMessageBox(self, title="Input Error", message=f"{label} must be between 0 and 300 cm.")
                             return
                         if key == "neck_circumference_(cm)" and not (0 <= number <= 100):
-                            CustomMessageBox(self, title="Input Error", message=f"{label} Age must be between 0 and 100 cm.")
+                            CustomMessageBox(self, title="Input Error", message=f"{label} must be between 0 and 100 cm.")
                             return
                     data[key] = value
 
-            # Cargar datos previos para no sobrescribir "recordedSessions"
             patient_data = load_patient_data()
-            recorded_sessions = patient_data.get("recordedSessions", 0)  # valor por defecto si no existe
-            data["recordedSessions"] = recorded_sessions  # mantener el campo
+            recorded_sessions = patient_data.get("recordedSessions", 0)
+            data["recordedSessions"] = recorded_sessions
 
-            save_patient_data(data)  # guarda con "recordedSessions" intacto
-            CustomMessageBox(self, title="Success", message= "Patient data saved successfully.")
-            
+            save_patient_data(data)
+            CustomMessageBox(self, title="Success", message="Patient data saved successfully.")
+
             self.load_data_into_form()
             self.set_fields_state(disabled=True)
             self.edit_save_button.configure(text="Edit")
@@ -264,3 +272,23 @@ class ProfileForm(ctk.CTkFrame):
         state = "disabled" if disabled else "normal"
         for widget in self.fields.values():
             widget.configure(state=state)
+
+    def update_profile_label(self):
+        patient_data = load_patient_data()
+        patient_name = patient_data.get("name", "Unknown User")
+        self.profile_icon_label.configure(text=f" {patient_name}")
+
+    def load_data_into_form(self):
+        data = load_patient_data()
+        if not data:
+            print("Database is empty. Please enter patient information.")
+            return
+
+        for label, entry in self.fields.items():
+            key = self.field_keys[label]
+            value = data.get(key, "")
+            if isinstance(entry, ctk.CTkOptionMenu):
+                entry.set(value if value else "Select an option")
+            else:
+                entry.delete(0, "end")
+                entry.insert(0, value)

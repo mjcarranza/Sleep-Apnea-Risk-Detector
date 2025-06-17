@@ -2,7 +2,6 @@ import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
-import joblib
 
 # Cargar el dataset
 df = pd.read_csv("/home/mario/Downloads/apnea-training-dataset.csv")
@@ -16,7 +15,7 @@ input_features = ['Age', 'Gender', 'BMI', 'Nasal_Airflow', 'Snoring']
 X = df[input_features]
 
 # =========================
-# Modelo 1: Treatment_Required
+# Modelo: Treatment_Required
 # =========================
 y_treatment = df['Treatment_Required']
 X_train_t, X_test_t, y_train_t, y_test_t = train_test_split(X, y_treatment, test_size=0.2, random_state=42)
