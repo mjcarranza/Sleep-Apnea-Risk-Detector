@@ -15,7 +15,7 @@ def get_next_session_number():
 def increment_session_number():
     with open(DB_PATH, "r+") as f:
         db = json.load(f)
-        db["patient"]["recordedSesions"] += 1
+        db["patient"]["recordedSessions"] = int(db["patient"]["recordedSessions"]) + 1
         f.seek(0)
         json.dump(db, f, indent=4)
         f.truncate()

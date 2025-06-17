@@ -1,5 +1,6 @@
 import customtkinter as ctk
 import tkinter as tk
+import tkinter.messagebox as messagebox
 import pandas as pd
 import json
 import os
@@ -9,6 +10,7 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from reportGeneration.reportGenerator import generate_report, generate_full_report
 import numpy as np
+import shutil
 
 JSON_PATH = "data/patientData/patient_data.json"
 CSV_PATH = "data/processed/processed_patient_data.csv"
@@ -103,7 +105,6 @@ class DataVisualization(ctk.CTkFrame):
             label = ctk.CTkLabel(info_frame, text=info, font=ctk.CTkFont(size=16), text_color="white", anchor="w")
             label.pack(fill="x", padx=10, pady=4)
 
-        # Botón para generar el reporte completo
         generate_report_button = ctk.CTkButton(
             info_frame,
             text="Generate Full Report",
@@ -112,7 +113,7 @@ class DataVisualization(ctk.CTkFrame):
             hover_color="#6A6A8A",
             text_color="white",
             corner_radius=12,
-            command=generate_full_report  # asegúrate de importar esta función
+            command=generate_full_report
         )
         generate_report_button.pack(pady=(10, 5))
 
@@ -127,7 +128,6 @@ class DataVisualization(ctk.CTkFrame):
             session_frame = ctk.CTkFrame(self.scrollable_frame, fg_color="#2C2C3E", corner_radius=15)
             session_frame.pack(fill="x", padx=20, pady=15)
 
-            # Encabezado de sesión y botón de reporte
             header_frame = ctk.CTkFrame(session_frame, fg_color="transparent")
             header_frame.pack(fill="x", padx=10, pady=(10, 5))
 
@@ -152,7 +152,19 @@ class DataVisualization(ctk.CTkFrame):
             )
             report_button.pack(side="right")
 
-            # Tabla de eventos de apnea
+            delete_button = ctk.CTkButton(
+                header_frame,
+                text="Delete Session",
+                font=ctk.CTkFont(size=18),
+                fg_color="red",
+                hover_color="#cc0000",
+                text_color="white",
+                corner_radius=8,
+                width=140,
+                command=lambda sid=session_id: self.delete_session(sid)
+            )
+            delete_button.pack(side="right", padx=10)
+
             apnea_events = session_df[session_df['Has_Apnea'] == True]
 
             if not apnea_events.empty:
@@ -197,7 +209,6 @@ class DataVisualization(ctk.CTkFrame):
                 )
                 no_apnea_label.pack(pady=(10, 5))
 
-            # Vista de audio
             audio_path = os.path.join(AUDIO_FOLDER, f"Session{session_id}", "audio.wav")
             if os.path.exists(audio_path):
                 try:
@@ -225,7 +236,7 @@ class DataVisualization(ctk.CTkFrame):
                     canvas_wave.draw()
                     canvas_wave.get_tk_widget().pack(fill="both", expand=True)
 
-                    plt.close(fig_wave)  # <- CIERRA LA FIGURA PARA EVITAR WARNINGS Y FUGAS DE MEMORIA
+                    plt.close(fig_wave)
 
                 except Exception as e:
                     print(f"[ERROR] Al procesar el audio: {e}")
@@ -243,7 +254,6 @@ class DataVisualization(ctk.CTkFrame):
                 )
                 play_button.configure(command=lambda p=audio_path, b=play_button: self.toggle_audio(p, b))
                 play_button.pack(pady=(5, 10))
-
 
     def toggle_audio(self, path, button):
         if self.current_play_obj and self.current_play_obj.is_playing():
@@ -284,6 +294,27 @@ class DataVisualization(ctk.CTkFrame):
             self.current_button = None
         else:
             self.after(100, self._check_audio_finished)
+
+    def delete_session(self, session_id):
+        confirm = messagebox.askyesno("Confirm Delete", f"Are you sure you want to delete Session {session_id}?")
+        if not confirm:
+            return
+
+        try:
+            df = pd.read_csv(CSV_PATH)
+            df["Session"] = df.groupby((df['Start_Time'] == 0).cumsum()).ngroup() + 1
+            df = df[df["Session"] != session_id]
+            df.drop(columns=["Session"], inplace=True)
+            df.to_csv(CSV_PATH, index=False)
+
+            session_audio_folder = os.path.join(AUDIO_FOLDER, f"Session{session_id}")
+            if os.path.exists(session_audio_folder):
+                shutil.rmtree(session_audio_folder)
+
+            messagebox.showinfo("Deleted", f"Session {session_id} has been deleted.")
+            self.on_show()
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to delete session: {e}")
 
     def on_show(self):
         for widget in self.scrollable_frame.winfo_children():

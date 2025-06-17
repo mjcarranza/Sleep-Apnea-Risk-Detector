@@ -141,24 +141,27 @@ def generate_full_report():
 
         apnea_events = session_df[session_df["Has_Apnea"] == True][["Start_Time", "End_Time", "Snoring", "Treatment_Required"]]
 
-        if not apnea_events.empty:
-            elements.append(Paragraph("Apnea Events", styles["Heading3"]))
-            data = [["Start Time", "End Time", "Snoring", "Treatment Required"]] + apnea_events.values.tolist()
-            table = Table(data, colWidths=[100, 100, 100, 130])
-            table.setStyle(TableStyle([
-                ('BACKGROUND', (0,0), (-1,0), colors.grey),
-                ('TEXTCOLOR', (0,0), (-1,0), colors.whitesmoke),
-                ('ALIGN',(0,0),(-1,-1),'CENTER'),
-                ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
-                ('BOTTOMPADDING', (0,0), (-1,0), 10),
-                ('BACKGROUND',(0,1),(-1,-1),colors.beige),
-                ('GRID', (0,0), (-1,-1), 1, colors.black),
-            ]))
-            elements.append(table)
-        else:
-            elements.append(Paragraph("No apnea events were detected in this session.", styles["Normal"]))
+        # Siempre crear tabla (incluso si no hay eventos)
+        data = [["Start Time", "End Time", "Snoring", "Treatment Required"]]
 
-        elements.append(Spacer(1, 20))
+        if not apnea_events.empty:
+            data += apnea_events.values.tolist()
+        else:
+            # Agregar fila vacía (opcional, o puedes dejar solo los headers)
+            data.append(["-", "-", "-", "-"])
+
+        table = Table(data, colWidths=[100, 100, 100, 130])
+        table.setStyle(TableStyle([
+            ('BACKGROUND', (0,0), (-1,0), colors.grey),
+            ('TEXTCOLOR', (0,0), (-1,0), colors.whitesmoke),
+            ('ALIGN',(0,0),(-1,-1),'CENTER'),
+            ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+            ('BOTTOMPADDING', (0,0), (-1,0), 10),
+            ('BACKGROUND',(0,1),(-1,-1),colors.beige),
+            ('GRID', (0,0), (-1,-1), 1, colors.black),
+        ]))
+        elements.append(table)
+    elements.append(Spacer(1, 20))
 
     doc.build(elements)
     print(f"[INFO] Full report saved to: {file_path}")

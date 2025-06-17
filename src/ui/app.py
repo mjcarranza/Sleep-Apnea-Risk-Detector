@@ -27,13 +27,10 @@ class App(ctk.CTk):
 
         # Determinar cuál pantalla mostrar primero
         if not self.is_terms_accepted():
-            print("hola1")
             self.show_frame("TermsAndConditionsScreen")
         elif not is_profile_complete():
-            print("hola2")
             self.show_frame("ProfileForm")
         else:
-            print("hola3")
             self.show_frame("StartScreen")
 
         self.after(0, self.center_window)
@@ -45,11 +42,9 @@ class App(ctk.CTk):
                 os.makedirs(os.path.dirname(TERMS_PATH), exist_ok=True)
                 with open(TERMS_PATH, "w") as f:
                     json.dump({"accepted": False}, f, indent=4)
-                print("Archivo terms.json creado automáticamente.")
                 return False
             with open(TERMS_PATH, "r") as f:
                 data = json.load(f)
-                print(f"Contenido de terms.json: {data}")  # Debug temporal
                 return data.get("accepted", False)
         except Exception as e:
             print(f"Error loading JSON for terms: {e}")
