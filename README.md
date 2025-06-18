@@ -46,10 +46,10 @@ Fig 2. Main window.
 
 Fig 3. Recording window.
 
-![image](https://github.com/mjcarranza/Apnea-Detector/blob/main/assets/App%20Images/Screenshot%20from%202025-06-18%2010-29-09.png)
+![image](https://github.com/mjcarranza/Apnea-Detector/blob/main/assets/App%20Images/Screenshot%20from%202025-06-18%2010-44-52.png)
 
 Fig 4. Profile.
 
-![image]()
+![image](https://github.com/mjcarranza/Apnea-Detector/blob/main/assets/App%20Images/Screenshot%20from%202025-06-18%2011-02-59.png)
 
 Fig 5. Sleep history.
