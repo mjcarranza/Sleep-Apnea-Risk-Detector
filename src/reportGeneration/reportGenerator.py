@@ -3,13 +3,13 @@ from tkinter import filedialog
 from reportlab.lib.pagesizes import A4
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet
-from recommendation.recommendation_engine import generate_recommendations
+from src.recommendation.recommendation_engine import generate_recommendations
 import pandas as pd
 import json
 import os
 
 # Import centralized paths for CSV and JSON data files
-from ui.paths import CSV_PATH, JSON_PATH 
+from src.ui.paths import CSV_PATH, JSON_PATH 
 
 # Constants for data paths and output directory
 JSON_PATH = "data/patientData/patient_data.json"
