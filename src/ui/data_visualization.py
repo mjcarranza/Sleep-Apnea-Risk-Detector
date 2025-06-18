@@ -128,8 +128,13 @@ class DataVisualization(ctk.CTkFrame):
             f"Name: {data.get('name', 'N/A')}",
             f"Age: {data.get('age', 'N/A')}",
             f"Sex: {data.get('sex', 'N/A')}",
+            f"Weight: {data.get('weight_(kg)', 'N/A')}",
+            f"Height: {data.get('height_(cm)', 'N/A')}",
             f"BMI: {data.get('bmi', 'N/A')}",
-            f"Neck Circumference: {data.get('neck_circumference_(cm)', 'N/A')} cm"
+            f"Neck Circumference: {data.get('neck_circumference_(cm)', 'N/A')} cm",
+            f"Alcohol use: {data.get('regular_alcohol_use', 'N/A')}",
+            f"Sleep Difficulties: {data.get('regular_sleep_difficulties', 'N/A')}",
+            f"Familiar Apnea History: {data.get('familiar_apnea_history', 'N/A')}"
         ]
 
         for info in patient_info:
