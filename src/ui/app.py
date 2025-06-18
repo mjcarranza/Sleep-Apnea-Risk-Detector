@@ -13,7 +13,11 @@ from ui.terms_screen import TermsAndConditionsScreen
 from utils.data_utils import is_profile_complete
 from ui.paths import TERMS_PATH
 
+"""
+This is the main method of the application
+"""
 class App(ctk.CTk):
+    # Window configuration
     def __init__(self):
         super().__init__()
         self.title("Sleep Apnea Detection System")
@@ -25,7 +29,7 @@ class App(ctk.CTk):
 
         self.frames = {}
 
-        # Determinar cuál pantalla mostrar primero
+        # Determines what window to show first
         if not self.is_terms_accepted():
             self.show_frame("TermsAndConditionsScreen")
         elif not is_profile_complete():
@@ -35,8 +39,10 @@ class App(ctk.CTk):
 
         self.after(0, self.center_window)
 
+    """
+    Verifies if the user already accepted terms and conditions.
+    """
     def is_terms_accepted(self):
-        """Verifica si el usuario ya aceptó los términos y condiciones."""
         try:
             if not os.path.exists(TERMS_PATH):
                 os.makedirs(os.path.dirname(TERMS_PATH), exist_ok=True)
@@ -50,8 +56,10 @@ class App(ctk.CTk):
             print(f"Error loading JSON for terms: {e}")
             return False
 
+    """
+    Shows a specific window creating it if necessary.
+    """
     def show_frame(self, container):
-        """Muestra una pantalla específica, creándola si es necesario."""
         if container not in self.frames:
             if container == "StartScreen":
                 frame = StartScreen(self)
@@ -74,13 +82,19 @@ class App(ctk.CTk):
         if hasattr(frame, "on_show"):
             frame.on_show()
 
+
+    """
+    Callback that is called when user accept terms and coditions.
+    """
     def on_terms_accepted(self):
-        """Callback que se llama cuando el usuario acepta los términos."""
         if not is_profile_complete():
             self.show_frame("ProfileForm")
         else:
             self.show_frame("StartScreen")
 
+    """
+    Centers the window on the screen
+    """
     def center_window(self):
         self.update_idletasks()
         width = self.winfo_width()

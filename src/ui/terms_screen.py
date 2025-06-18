@@ -3,14 +3,18 @@ import json
 import os
 from ui.paths import TERMS_PATH
 
+'''
+This is a class for a window in the application that is going to show the terms and conditions of using the application
+'''
 class TermsAndConditionsScreen(ctk.CTkFrame):
     def __init__(self, parent, on_accept_callback=None):
         super().__init__(parent)
         self.parent = parent
         self.on_accept_callback = on_accept_callback
 
+        # window configuration
         self.configure(fg_color="#2b2b2b")
-        self.grid_rowconfigure(1, weight=1)  # Textbox expands
+        self.grid_rowconfigure(1, weight=1)
         self.grid_columnconfigure(0, weight=1)
 
         title_label = ctk.CTkLabel(self, text="Terms and Conditions",
@@ -18,6 +22,7 @@ class TermsAndConditionsScreen(ctk.CTkFrame):
                                    text_color="white")
         title_label.grid(row=0, column=0, pady=10, sticky="n")
 
+        # Terms and contions' text
         terms_text = (
             "By using this application, you agree to the following terms and conditions.\n"
             "\n"
@@ -56,6 +61,7 @@ class TermsAndConditionsScreen(ctk.CTkFrame):
             "The developer reserves the right to modify these terms at any time. Updates will be notified within the application.\n"
         )
 
+        # Text box
         self.text_box = ctk.CTkTextbox(self, wrap="word", fg_color="#3a3a3a",
                                        text_color="white", font=ctk.CTkFont(size=14))
         self.text_box.insert("1.0", terms_text)
@@ -78,21 +84,31 @@ class TermsAndConditionsScreen(ctk.CTkFrame):
 
         self.bind("<Configure>", self.on_resize)  # Bind resize event
 
+    '''
+    Adjust textbox size when the window resizes.
+    '''
     def on_resize(self, event):
-        """Adjust textbox size when the window resizes."""
         new_width = event.width - 40  # Margin compensation
         new_height = event.height - 200  # Leave room for title and buttons
         if new_width > 300 and new_height > 200:
             self.text_box.configure(width=new_width, height=new_height)
 
+    '''
+    Call next window in case terms and contions are accepted
+    '''
     def accept_terms(self):
         self.save_terms_status(True)
         if self.on_accept_callback:
             self.on_accept_callback()
 
+    '''
+    Close full application in case the terms and conditios are declined
+    '''
     def decline_terms(self):
         self.parent.destroy()
 
+    '''
+    Funtion saves the state of 'Accepted' for terms and conditions in a JSON file'''
     @staticmethod
     def save_terms_status(status):
         os.makedirs(os.path.dirname(TERMS_PATH), exist_ok=True)

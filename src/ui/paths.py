@@ -1,3 +1,5 @@
+''' This file provides important and no changing paths to files and folders'''
+
 import os
 
 # Ruta base del proyecto

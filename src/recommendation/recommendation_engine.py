@@ -1,3 +1,8 @@
+
+"""
+This module gets the user's profile information and generates recommendations based on every parameter.
+Returns a list of recommendations.
+"""
 def generate_recommendations(age, sex, weight, height, bmi, neck_circumference, alcohol_use, apnea_history, sleep_difficulties):
     recommendations = []
 

@@ -4,9 +4,14 @@ import customtkinter as ctk
 from utils.data_utils import save_patient_data, load_patient_data, is_profile_complete
 from utils.custom_messagebox import CustomMessageBox
 
+# Path for the profile's icon
 ICON_PATH = "assets/user_profile_icon.png"
 
+'''
+Profile form screen
+'''
 class ProfileForm(ctk.CTkFrame):
+    # Window configuration
     def __init__(self, parent):
         super().__init__(parent)
         self.parent = parent
@@ -24,7 +29,8 @@ class ProfileForm(ctk.CTkFrame):
             "Familiar Apnea History": "familiar_apnea_history"
         }
         self.is_editing = False
-
+        
+        # Background color
         self.configure(fg_color="#1e1e2f")
 
         self.grid_columnconfigure(0, weight=1)
@@ -33,6 +39,7 @@ class ProfileForm(ctk.CTkFrame):
         title_frame = ctk.CTkFrame(self, fg_color="transparent")
         title_frame.pack(pady=20)
 
+        # Loading icon
         try:
             icon = Image.open(ICON_PATH)
             icon = icon.resize((25, 25), Image.Resampling.LANCZOS)
@@ -59,6 +66,7 @@ class ProfileForm(ctk.CTkFrame):
         form_frame = ctk.CTkFrame(self, fg_color="#2a2a3d", corner_radius=15)
         form_frame.pack(padx=40, pady=20, fill="both", expand=True)
 
+        # Information labels
         for label in self.field_keys.keys():
             row = ctk.CTkFrame(form_frame, fg_color="transparent")
             row.pack(fill="x", pady=5)
@@ -73,6 +81,7 @@ class ProfileForm(ctk.CTkFrame):
             )
             label_widget.pack(side="left")
 
+            # Label for sex
             if label == "Sex":
                 entry = ctk.CTkOptionMenu(
                     row,
@@ -85,6 +94,7 @@ class ProfileForm(ctk.CTkFrame):
                     dropdown_hover_color="#4f4f7a"
                 )
                 entry.set("Select an option")
+            # Other labels
             elif label in ["Regular Alcohol Use", "Regular Sleep Difficulties", "Familiar Apnea History"]:
                 entry = ctk.CTkOptionMenu(
                     row,
@@ -115,6 +125,7 @@ class ProfileForm(ctk.CTkFrame):
         self.buttons_frame = ctk.CTkFrame(self, fg_color="transparent")
         self.buttons_frame.pack(pady=10)
 
+        # Edit and save button
         self.edit_save_button = ctk.CTkButton(
             self.buttons_frame,
             text="Edit",
@@ -129,6 +140,7 @@ class ProfileForm(ctk.CTkFrame):
         )
         self.edit_save_button.grid(row=0, column=0, padx=10)
 
+        # Back to main button
         self.cancel_back_button = ctk.CTkButton(
             self.buttons_frame,
             text="Back to Main Menu",
@@ -146,6 +158,9 @@ class ProfileForm(ctk.CTkFrame):
 
         self.update_profile_label()
 
+    '''
+    Calculate and update BMI
+    '''
     def update_bmi(self, *args):
         try:
             weight = float(self.fields["Weight (kg)"].get())
@@ -165,21 +180,29 @@ class ProfileForm(ctk.CTkFrame):
             self.fields["BMI"].insert(0, "")
             self.fields["BMI"].configure(state="disabled")
 
+    '''
+    At the moment of showing the window for the first time
+    '''
     def on_show(self):
         self.load_data_into_form()
 
+        # In case the profile is complete disable all inputs
         if is_profile_complete():
             self.set_fields_state(disabled=True)
             self.edit_save_button.configure(text="Edit")
             self.cancel_back_button.configure(text="Back to Main Menu")
             self.cancel_back_button.grid()
             self.is_editing = False
+        # In case the profile is not complete ask for missing data
         else:
             self.set_fields_state(disabled=False)
             self.edit_save_button.configure(text="Save Data")
             self.cancel_back_button.grid_remove()
             self.is_editing = True
 
+    '''
+    Load profile data into the form
+    '''
     def load_data_into_form(self):
         data = load_patient_data()
         if not data:
@@ -195,11 +218,17 @@ class ProfileForm(ctk.CTkFrame):
                 entry.delete(0, "end")
                 entry.insert(0, value)
 
+    '''
+    Update patient's name in the app
+    '''
     def update_profile_label(self):
         patient_data = load_patient_data()
         patient_name = patient_data.get("name", "Unknown User")
         self.profile_icon_label.configure(text=f" {patient_name}")
 
+    '''
+    Edit-Save button functionality
+    '''
     def toggle_edit_save(self):
         if not self.is_editing:
             self.set_fields_state(disabled=False)
@@ -258,6 +287,9 @@ class ProfileForm(ctk.CTkFrame):
             self.cancel_back_button.grid()
             self.is_editing = False
 
+    '''
+    Cancel-Go Back button functionality
+    '''
     def cancel_or_back(self):
         if self.is_editing:
             self.load_data_into_form()
@@ -268,27 +300,10 @@ class ProfileForm(ctk.CTkFrame):
         else:
             self.parent.show_frame("StartScreen")
 
+    '''
+    Enable or disable input fields
+    '''
     def set_fields_state(self, disabled=True):
         state = "disabled" if disabled else "normal"
         for widget in self.fields.values():
             widget.configure(state=state)
-
-    def update_profile_label(self):
-        patient_data = load_patient_data()
-        patient_name = patient_data.get("name", "Unknown User")
-        self.profile_icon_label.configure(text=f" {patient_name}")
-
-    def load_data_into_form(self):
-        data = load_patient_data()
-        if not data:
-            print("Database is empty. Please enter patient information.")
-            return
-
-        for label, entry in self.fields.items():
-            key = self.field_keys[label]
-            value = data.get(key, "")
-            if isinstance(entry, ctk.CTkOptionMenu):
-                entry.set(value if value else "Select an option")
-            else:
-                entry.delete(0, "end")
-                entry.insert(0, value)
