@@ -37,3 +37,19 @@ The application allows users to monitor their sleep and detect possible apnea ep
 * A screen is used to display the terms and conditions of use, which must be accepted before using the app.
 
 ## Application Appendices
+
+![image](https://github.com/mjcarranza/Apnea-Detector/blob/main/assets/App%20Images/Screenshot%20from%202025-06-18%2010-28-47.png)
+
+Fig 2. Main window.
+
+![image](https://github.com/mjcarranza/Apnea-Detector/blob/main/assets/App%20Images/Screenshot%20from%202025-06-18%2010-28-54.png)
+
+Fig 3. Recording window.
+
+![image](https://github.com/mjcarranza/Apnea-Detector/blob/main/assets/App%20Images/Screenshot%20from%202025-06-18%2010-29-09.png)
+
+Fig 4. Profile.
+
+![image]()
+
+Fig 5. Sleep history.
