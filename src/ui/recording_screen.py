@@ -7,10 +7,10 @@ import traceback
 import numpy as np
 import pygame
 from tkinter import messagebox
-from src.dataAcquisition.microphoneInput import get_next_session_number, increment_session_number
-from src.utils.custom_messagebox import CustomMessageBox
-from src.utils.custom_selectionbox import CustomTwoButtonMessageBox
-from src.signalProcessing.process_and_label_audio import process_audio_and_update_dataset
+from dataAcquisition.microphoneInput import get_next_session_number, increment_session_number
+from utils.custom_messagebox import CustomMessageBox
+from utils.custom_selectionbox import CustomTwoButtonMessageBox
+from signalProcessing.process_and_label_audio import process_audio_and_update_dataset
 
 # Paths for patient data and alarm sounds directory
 DB_PATH = "data/patientData/patient_data.json"
@@ -271,7 +271,7 @@ class RecordingScreen(ctk.CTkFrame):
 
     '''
     '''
-    def audio_callback(self, indata, status):
+    def audio_callback(self, indata, frames, time, status):
         if status:
             print(status)
         volume = np.linalg.norm(indata) / np.sqrt(len(indata))
@@ -383,7 +383,10 @@ class RecordingScreen(ctk.CTkFrame):
             processed_dir = os.path.join("data", "processed")
             os.makedirs(processed_dir, exist_ok=True)
 
+            start = time.time()
             process_audio_and_update_dataset(wav_path=file_path)
+            end = time.time()
+            print(f"Tiempo de ejecución de procesamiento de audio es : {end - start:.4f} segundos")
             increment_session_number()
             CustomMessageBox(self, title="Session Saved", message="This session has been saved.", on_ok=self.stop_alarm)
         # In case there's an error saving the actual session

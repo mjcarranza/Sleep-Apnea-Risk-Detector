@@ -1,7 +1,7 @@
 import customtkinter as ctk
 import json
 import os
-from src.ui.paths import TERMS_PATH
+from ui.paths import TERMS_PATH
 
 '''
 This is a class for a window in the application that is going to show the terms and conditions of using the application

@@ -60,4 +60,4 @@ print(classification_report(y, y_pred))
 acc = accuracy_score(y, y_pred)
 print(f"Accuracy: {acc:.4f}")
 
-joblib.dump(model_apnea, "apnea-prediction-model.pkl")
+#joblib.dump(model_apnea, "apnea-prediction-model.pkl")

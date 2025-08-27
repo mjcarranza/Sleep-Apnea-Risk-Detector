@@ -1,0 +1,6 @@
+pip install imgaug opencv-python        # librería OpenCV
+pip install tqdm    
+
+
+### Sleep position reference
+https://remify.mx/blogs/blog-del-sueno/mejor-postura-para-dormir-con-apnea-de-sueno#:~:text=Dormir%20boca%20arriba%20(Supina),general%20y%20el%20desempe%C3%B1o%20diario.

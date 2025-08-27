@@ -8,7 +8,7 @@ import wave
 import simpleaudio as sa
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-from src.reportGeneration.reportGenerator import generate_report, generate_full_report
+from reportGeneration.reportGenerator import generate_report, generate_full_report
 import numpy as np
 import shutil
 
