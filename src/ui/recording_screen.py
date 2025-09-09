@@ -41,6 +41,10 @@ class RecordingScreen(ctk.CTkFrame):
         self.audio_data = []
         self.sample_rate = 44100
         self.alarm_set = False
+        self.segment_duration = 10  # segundos
+        self.segment_samples = self.segment_duration * self.sample_rate
+        self.segment_buffer = []
+        self.segment_index = 0
 
         # Set dark theme
         self.configure(fg_color="#1e1e2f")
@@ -277,6 +281,32 @@ class RecordingScreen(ctk.CTkFrame):
         volume = np.linalg.norm(indata) / np.sqrt(len(indata))
         self.volume_level = min(volume * 5, 1.0)
         self.audio_data.append(indata.copy())
+        self.segment_buffer.append(indata.copy())
+
+        # Check if there are enough samples for 10s
+        total_samples = sum(chunk.shape[0] for chunk in self.segment_buffer)
+        if total_samples >= self.segment_samples:
+            self.segment_index += 1
+            segment_np = np.concatenate(self.segment_buffer, axis=0)[:self.segment_samples]
+
+            # Save file
+            session_num = get_next_session_number()
+            session_dir = os.path.join("data", "raw", f"Session{session_num}")
+            os.makedirs(session_dir, exist_ok=True)
+            file_path = os.path.join(session_dir, f"segment_{self.segment_index}.wav")
+            sf.write(file_path, segment_np, self.sample_rate)
+            print(f"[INFO] Segment {self.segment_index} saved in: {file_path}")
+
+            # Process segment
+            try:
+                process_audio_and_update_dataset(file_path, False)
+                print(f"[INFO] Porcessed segment: {self.segment_index}")
+            except Exception as e:
+                print(f"[ERROR] Failed processing segment: {self.segment_index}: {e}")
+
+            # Reset buffer
+            remaining = np.concatenate(self.segment_buffer, axis=0)[self.segment_samples:]
+            self.segment_buffer = [remaining] if remaining.size > 0 else []
 
     '''
     Start recordin audio
@@ -384,9 +414,20 @@ class RecordingScreen(ctk.CTkFrame):
             os.makedirs(processed_dir, exist_ok=True)
 
             start = time.time()
-            process_audio_and_update_dataset(wav_path=file_path)
+            process_audio_and_update_dataset(file_path, True) # wav_path=file_path??
+
+            # Eliminar los segmentos temporales para ahorrar espacio
+            for f in os.listdir(session_dir):
+                if f.startswith("segment_") and f.endswith(".wav"):
+                    try:
+                        os.remove(os.path.join(session_dir, f))
+                        print(f"[INFO] Deleted temporal segment: {f}")
+                    except Exception as e:
+                        print(f"[WARN] Couldn't delete temporal segment {f}: {e}")
+
+
             end = time.time()
-            print(f"Tiempo de ejecución de procesamiento de audio es : {end - start:.4f} segundos")
+            print(f"Audio processing time: {end - start:.4f} seconds")
             increment_session_number()
             CustomMessageBox(self, title="Session Saved", message="This session has been saved.", on_ok=self.stop_alarm)
         # In case there's an error saving the actual session
@@ -410,7 +451,7 @@ class RecordingScreen(ctk.CTkFrame):
                          on_cancel=self.on_cancel_action)
     
     '''
-    Informtion on cancel selection
+    Information on cancel selection
     '''
     def on_cancel_action():
         print("Action Canceled")

@@ -95,7 +95,7 @@ def extract_features(segment, sample_rate):
 """
 Process audio in WAV format, extracts features, predicts apnea and treatment, and updates user's dataset
 """
-def process_audio_and_update_dataset(wav_path, sample_rate=16000, segment_duration=5):
+def process_audio_and_update_dataset(wav_path, finished, sample_rate=16000, segment_duration=5):
     print(f"[INFO] Cargando audio desde {wav_path}")
     audio, sr = librosa.load(wav_path, sr=sample_rate)
     samples_per_segment = segment_duration * sample_rate
@@ -161,14 +161,15 @@ def process_audio_and_update_dataset(wav_path, sample_rate=16000, segment_durati
 
             all_rows.append(row)
 
-    df_new = pd.DataFrame(all_rows)
+    if finished:
+        df_new = pd.DataFrame(all_rows)
 
-    # Save new data
-    if os.path.exists(output_csv):
-        df_existing = pd.read_csv(output_csv)
-        df_updated = pd.concat([df_existing, df_new], ignore_index=True)
-    else:
-        df_updated = df_new
+        # Save new data
+        if os.path.exists(output_csv):
+            df_existing = pd.read_csv(output_csv)
+            df_updated = pd.concat([df_existing, df_new], ignore_index=True)
+        else:
+            df_updated = df_new
 
-    df_updated.to_csv(output_csv, index=False)
-    print(f"[INFO] Dataset actualizado: {output_csv}")
+        df_updated.to_csv(output_csv, index=False)
+        print(f"[INFO] Dataset actualizado: {output_csv}")
