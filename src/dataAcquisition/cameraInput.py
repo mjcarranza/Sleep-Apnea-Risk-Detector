@@ -1,44 +1,79 @@
-# Use OpenCV to get images from the camera
 import cv2
+import os
+import time
+from microphoneInput import get_next_session_number, get_next_photo_number, increment_photo_number
 
+'''
 # Function to get an image and send it to the sleeping pose detection model
 # Return true for a bad position or false for a good one.
 # Return the actual sleeping position
-def getSleepingPosition():
-
-    # Usa la webcam externa (según tu salida está en /dev/video0)
-    cap = cv2.VideoCapture("/dev/video0")
+'''
+def takePhoto():
+    # Use webcam
+    cap = cv2.VideoCapture("/dev/video2") #use video0 or video2
 
     if not cap.isOpened():
-        print("❌ No se pudo abrir la cámara externa")
-        exit()
+        print("[INFO]: Couldn't open external camera.")
+        return None
 
-    # Configura resolución 1080p
+    # Configure 1080p resolution
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
 
+    # Wait one second for the camera to be ready
+    time.sleep(1)
+
+    # Read some frames "dummy"
+    for _ in range(5):
+        cap.read()
 
     ret, frame = cap.read()
     if not ret:
-        print("❌ No se pudo leer el frame")
-        
+        print("[INFO]: Couldn't get the frame")
+        cap.release()
+        return None
 
-    cv2.imshow("Webcam externa - 1080p", frame)
+    # Get actual session folder direction
+    session_num = get_next_session_number()
+    session_dir = os.path.join("data", "raw", f"Session{session_num}")
+    os.makedirs(session_dir, exist_ok=True)
 
-    # save this picture to the corresponding folder. (the one for the current reccording session)
-    # data/raw/*Session Number*
-    cv2.imwrite("captura_1080p.jpg", frame) 
-    print("✅ Foto guardada como captura_1080p.jpg")
+    # Get actual image index
+    imgIdx = get_next_photo_number()
+
+    # Save image in actual session
+    file_path = os.path.join(session_dir, f"capture_{imgIdx}.jpg")
+    cv2.imwrite(file_path, frame)
+    print(f"[INFO]: Saved photo to -> {file_path}")
+
+    # Increment photo index
+    increment_photo_number()
 
     cap.release()
     cv2.destroyAllWindows()
 
-    ## use the Model here to get the position
+    # Return image route
+    return file_path
 
-    ## pass it to the trigger alarm in case it's a bad position
-
-def triggerAlarm():
-    # trigger alarm code here...
+'''
+Set an alarm for emergency
+'''
+def triggerEmergencyAlarm():
+    # ver como controlar esta alarma, como apagarla
+    print("[INFO]: Alarm ringing....")
+    print("[INFO]: Alarm Stopped.")
     pass
 
-getSleepingPosition()
+
+
+# test
+takePhoto()
+
+
+"""
+time.sleep(1) → espera 1 segundo tras abrir la cámara.
+
+Lee 5 frames descartados antes de capturar el bueno.
+
+Esto permite que la cámara ajuste exposición, balance de blancos y nitidez.
+"""

@@ -9,6 +9,8 @@ import os
 import json
 import joblib
 from scipy.signal import butter, lfilter
+from imageProcessing.ImageProcessingModule import predict_posture
+from dataAcquisition.cameraInput import takePhoto, triggerEmergencyAlarm
 
 # Cargar modelos previamente entrenados
 apnea_model = joblib.load("data/models/apnea-prediction-model.pkl")
@@ -130,6 +132,7 @@ def process_audio_and_update_dataset(wav_path, finished, sample_rate=16000, segm
             print(f"[DEBUG] Nivel Decibeles: {decibel_level:.2f} dB")
             has_snoring = detect_snoring(snoring_rms, snore_energy, noise_threshold, decibel_level)
 
+
             input_data = pd.DataFrame([{
                 'Age': age,
                 'Gender': gender,
@@ -141,6 +144,20 @@ def process_audio_and_update_dataset(wav_path, finished, sample_rate=16000, segm
             # Prediction models
             has_apnea = bool(apnea_model.predict(input_data)[0])
             needs_treatment = bool(treatment_model.predict(input_data)[0])
+
+            # In case snoring is detected, call the module to take a picture
+            # Previously has_snoring is set to True or False
+            if has_snoring:
+                # call module to take a photo
+                img_dir = takePhoto()
+                # call Image processing module/predict posture
+                prediction = predict_posture(img_dir)
+                # in case it is a bad position
+                if prediction == "supine":
+                    # call method to trigger emergency alarm
+                    triggerEmergencyAlarm()
+            
+            '''HERE WE COULD USE AN ALARM IF ITS JUST SNORING, AND OTHER ONE IF THERE'S SNORING WITH DETECTED APNEA'''
 
             row = {
                 'Sleep_Session': session,
@@ -161,6 +178,7 @@ def process_audio_and_update_dataset(wav_path, finished, sample_rate=16000, segm
 
             all_rows.append(row)
 
+    # In case the session is finished, save the processed data 
     if finished:
         df_new = pd.DataFrame(all_rows)
 

@@ -7,7 +7,7 @@ import traceback
 import numpy as np
 import pygame
 from tkinter import messagebox
-from dataAcquisition.microphoneInput import get_next_session_number, increment_session_number
+from dataAcquisition.microphoneInput import get_next_session_number, increment_session_number, reset_photo_number
 from utils.custom_messagebox import CustomMessageBox
 from utils.custom_selectionbox import CustomTwoButtonMessageBox
 from signalProcessing.process_and_label_audio import process_audio_and_update_dataset
@@ -416,7 +416,10 @@ class RecordingScreen(ctk.CTkFrame):
             start = time.time()
             process_audio_and_update_dataset(file_path, True) # wav_path=file_path??
 
-            # Eliminar los segmentos temporales para ahorrar espacio
+            # reset photo index to 1 for next session
+            reset_photo_number()
+
+            # Delete audio segments
             for f in os.listdir(session_dir):
                 if f.startswith("segment_") and f.endswith(".wav"):
                     try:
