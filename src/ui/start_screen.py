@@ -69,7 +69,7 @@ class StartScreen(ctk.CTkFrame):
         # Profile Button
         self.profile_button = ctk.CTkButton(
             self.button_frame,
-            text="👤  Profile",
+            text="⚙️  Profile",
             font=ctk.CTkFont(size=16),
             width=140,
             height=40,

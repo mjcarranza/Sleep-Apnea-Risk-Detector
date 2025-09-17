@@ -21,6 +21,9 @@ output_csv = "data/processed/processed_patient_data.csv"
 # Ruta del archivo JSON con datos del paciente
 json_path = "data/patientData/patient_data.json"
 
+# determination of sleeping position
+positionList = []
+
 """
 Creates a Butterworth bandpass filter and returns the coeficients (b, a) for the filter as a touple
 """
@@ -98,14 +101,17 @@ def extract_features(segment, sample_rate):
 Process audio in WAV format, extracts features, predicts apnea and treatment, and updates user's dataset
 """
 def process_audio_and_update_dataset(wav_path, finished, sample_rate=16000, segment_duration=5):
-    print(f"[INFO] Cargando audio desde {wav_path}")
+    
+    # load audio segment
+    print(f"[INFO] Loading audio from {wav_path}")
     audio, sr = librosa.load(wav_path, sr=sample_rate)
+    # Segments per audio
     samples_per_segment = segment_duration * sample_rate
 
     audio = bandpass_filter(audio, lowcut=20, highcut=3000, fs=sample_rate)
 
     noise_threshold = estimate_noise(audio, sample_rate)
-    print(f"[INFO] Umbral de ruido RMS estimado: {noise_threshold:.5f}")
+    print(f"[INFO] Estimated RMS noise threshold: {noise_threshold:.5f}")
 
     all_rows = []
 
@@ -120,16 +126,16 @@ def process_audio_and_update_dataset(wav_path, finished, sample_rate=16000, segm
 
     gender = 1 if gender_str.lower() == "female" else 0 if gender_str.lower() == "male" else 2
 
-    print(f"[INFO] Procesando audio en segmentos de {segment_duration} segundos...")
+    print(f"[INFO] Processing audio in segments of {segment_duration} secunds...")
 
-    # Process user's data
+    # Process user's (audio) data
     for i in range(0, len(audio), samples_per_segment):
         segment = audio[i:i + samples_per_segment]
         if len(segment) == samples_per_segment:
             segment = segment / np.max(np.abs(segment))
 
             snoring_rms, nasal_airflow, spectral_centroid, snore_energy, decibel_level = extract_features(segment, sample_rate)
-            print(f"[DEBUG] Nivel Decibeles: {decibel_level:.2f} dB")
+            print(f"[DEBUG] Decibel level: {decibel_level:.2f} dB")
             has_snoring = detect_snoring(snoring_rms, snore_energy, noise_threshold, decibel_level)
 
 
@@ -141,21 +147,23 @@ def process_audio_and_update_dataset(wav_path, finished, sample_rate=16000, segm
                 'Snoring': has_snoring
             }])
 
-            # Prediction models
+            # Prediction models for apnea episodes and treatment required
             has_apnea = bool(apnea_model.predict(input_data)[0])
             needs_treatment = bool(treatment_model.predict(input_data)[0])
 
             # In case snoring is detected, call the module to take a picture
             # Previously has_snoring is set to True or False
+            # determination of sleeping position
             if has_snoring:
                 # call module to take a photo
+                print("[INFO]: Taking a picture")
                 img_dir = takePhoto()
                 # call Image processing module/predict posture
                 prediction = predict_posture(img_dir)
                 # in case it is a bad position
                 if prediction == "supine":
                     # call method to trigger emergency alarm
-                    triggerEmergencyAlarm()
+                    positionList.append(True)
             
             '''HERE WE COULD USE AN ALARM IF ITS JUST SNORING, AND OTHER ONE IF THERE'S SNORING WITH DETECTED APNEA'''
 
@@ -190,4 +198,12 @@ def process_audio_and_update_dataset(wav_path, finished, sample_rate=16000, segm
             df_updated = df_new
 
         df_updated.to_csv(output_csv, index=False)
-        print(f"[INFO] Dataset actualizado: {output_csv}")
+        print(f"[INFO] Dataset Updated: {output_csv}")
+    
+    # In case there is a bad position detected
+    if len(positionList) > 0:
+        positionList = [] # clear list
+        return True
+    
+    # if there is not bad positions detected
+    else: return False

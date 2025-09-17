@@ -1,7 +1,12 @@
 import cv2
 import os
 import time
-from microphoneInput import get_next_session_number, get_next_photo_number, increment_photo_number
+
+import pygame
+from dataAcquisition.microphoneInput import get_next_session_number, get_next_photo_number, increment_photo_number
+
+
+ALARM_SOUNDS_DIR = "assets/alarm_sounds"
 
 '''
 # Function to get an image and send it to the sleeping pose detection model
@@ -10,7 +15,7 @@ from microphoneInput import get_next_session_number, get_next_photo_number, incr
 '''
 def takePhoto():
     # Use webcam
-    cap = cv2.VideoCapture("/dev/video2") #use video0 or video2
+    cap = cv2.VideoCapture("/dev/video0") #use video0 or video2
 
     if not cap.isOpened():
         print("[INFO]: Couldn't open external camera.")
@@ -59,17 +64,21 @@ def takePhoto():
 Set an alarm for emergency
 '''
 def triggerEmergencyAlarm():
-    # ver como controlar esta alarma, como apagarla
-    print("[INFO]: Alarm ringing....")
-    print("[INFO]: Alarm Stopped.")
-    pass
-
+    # Initialize mixer
+    pygame.mixer.init()
+    # Play alarm
+    alarm_path = os.path.join(ALARM_SOUNDS_DIR, "Alarm 1.mp3")
+    pygame.mixer.music.load(alarm_path)
+    pygame.mixer.music.play()
+    # Play for 5 seconds
+    time.sleep(5)
+    # Stop music
+    pygame.mixer.music.stop()
 
 
 # test
-takePhoto()
-
-
+#takePhoto()
+#triggerEmergencyAlarm()
 """
 time.sleep(1) → espera 1 segundo tras abrir la cámara.
 

@@ -274,6 +274,7 @@ class RecordingScreen(ctk.CTkFrame):
         return None
 
     '''
+    In this method audio recordings of 10s each one are sent to the signal processing module, for it to check apnea episodes
     '''
     def audio_callback(self, indata, frames, time, status):
         if status:
@@ -289,7 +290,7 @@ class RecordingScreen(ctk.CTkFrame):
             self.segment_index += 1
             segment_np = np.concatenate(self.segment_buffer, axis=0)[:self.segment_samples]
 
-            # Save file
+            # Save audio file
             session_num = get_next_session_number()
             session_dir = os.path.join("data", "raw", f"Session{session_num}")
             os.makedirs(session_dir, exist_ok=True)
@@ -299,7 +300,12 @@ class RecordingScreen(ctk.CTkFrame):
 
             # Process segment
             try:
-                process_audio_and_update_dataset(file_path, False)
+                result = process_audio_and_update_dataset(file_path, False)
+                # in case there is a bad position detected
+                if result: 
+                    print("[INFO]: Bad position detected, please get another one!")
+                    self.triggerEmergencyAlarm()
+                # Print the informaation anyway
                 print(f"[INFO] Porcessed segment: {self.segment_index}")
             except Exception as e:
                 print(f"[ERROR] Failed processing segment: {self.segment_index}: {e}")
@@ -365,9 +371,9 @@ class RecordingScreen(ctk.CTkFrame):
     Stop playing alarm's sound
     '''
     def stop_alarm(self):
-        if pygame.mixer.music.get_busy():  # Verifica si hay música reproduciéndose
-            pygame.mixer.music.stop()      # Detiene la reproducción
-            self.alarm_triggered = False   # Resetea el estado de la alarma
+        if pygame.mixer.music.get_busy():  # Ckecks for actual playing music
+            pygame.mixer.music.stop()      # Stops playing music
+            self.alarm_triggered = False   # Resets alarm state
 
     '''
     Stop recording sleep session
@@ -471,3 +477,24 @@ class RecordingScreen(ctk.CTkFrame):
             self.stream = None
         self.audio_level.set(0)
         self.parent.show_frame("StartScreen")
+
+    '''
+    Set an alarm for emergency
+    '''
+    def triggerEmergencyAlarm(self):
+        # Initialize mixer
+        pygame.mixer.init()
+        # Play alarm
+        alarm_path = os.path.join(ALARM_SOUNDS_DIR, "Alarm 1.mp3")
+        pygame.mixer.music.load(alarm_path)
+        pygame.mixer.music.play()
+        
+        # Play for 5 seconds (check for usability) (just play alarm for 5 seconds) 
+        # time.sleep(5)
+        
+        # Custom message to stop music manually
+        CustomMessageBox(self, title="Session Saved", message="This session has been saved.", on_ok=self.stop_alarm)
+
+
+
+#CustomMessageBox(self, title="Session Saved", message="This session has been saved.", on_ok=self.stop_alarm)
