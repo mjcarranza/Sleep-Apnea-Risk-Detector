@@ -5,10 +5,12 @@ import pandas as pd
 import json
 import os
 import wave
+import subprocess
 import simpleaudio as sa
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from reportGeneration.reportGenerator import generate_report, generate_full_report
+from dataAcquisition.cameraInput import getPhotoDatetime
 import numpy as np
 import shutil
 
@@ -177,11 +179,22 @@ class DataVisualization(ctk.CTkFrame):
             session_title = ctk.CTkLabel(
                 header_frame,
                 text=f"Session {session_id}",
-                font=ctk.CTkFont(size=20, weight="bold"),
+                font=ctk.CTkFont(size=30, weight="bold"),
                 text_color="#FFFFFF"
             )
             session_title.pack(side="left")
 
+            # Count session's images
+            image_count = self.count_session_images(session_id)
+
+            image_count_label = ctk.CTkLabel(
+                header_frame,
+                text=f"Images: {image_count}",
+                font=ctk.CTkFont(size=20, weight="bold"),
+                text_color="#FFFFFF"
+            )
+            image_count_label.pack(side="left", padx=(20, 0))
+    
             # Generate PDF report button
             report_button = ctk.CTkButton(
                 header_frame,
@@ -209,6 +222,19 @@ class DataVisualization(ctk.CTkFrame):
                 command=lambda sid=session_id: self.delete_session(sid)
             )
             delete_button.pack(side="right", padx=10)
+
+            see_images_button = ctk.CTkButton(
+                header_frame,
+                text="See Taken Images",
+                font=ctk.CTkFont(size=18),
+                fg_color="#4a90e2",
+                hover_color="#357ABD",
+                text_color="white",
+                corner_radius=8,
+                width=140,
+                command=lambda sid=session_id: self.open_session_images(sid)
+            )
+            see_images_button.pack(side="right", padx=10)
 
             # Apnea events table or 'No events' label
             apnea_events = session_df[session_df['Has_Apnea'] == True]
@@ -306,6 +332,29 @@ class DataVisualization(ctk.CTkFrame):
                 )
                 play_button.configure(command=lambda p=audio_path, b=play_button: self.toggle_audio(p, b))
                 play_button.pack(pady=(5, 10))
+
+    """
+    Counts how many images (JPG and PNG) in the folder.
+    """
+    def count_session_images(self, session_id):
+        session_dir = os.path.join(AUDIO_FOLDER, f"Session{session_id}","Images")
+        if not os.path.exists(session_dir):
+            return 0
+        return len([f for f in os.listdir(session_dir) if f.lower().endswith((".jpg", ".png"))])
+
+
+    def open_session_images(self, session_id):
+        """
+        Abre el explorador de archivos en la carpeta de la sesión seleccionada.
+        """
+        session_dir = os.path.join(AUDIO_FOLDER, f"Session{session_id}","Images")
+        if os.path.exists(session_dir):
+            try:
+                subprocess.Popen(["xdg-open", session_dir])
+            except Exception as e:
+                messagebox.showerror("Error", f"No se pudo abrir la carpeta:\n{e}")
+        else:
+            messagebox.showinfo("Info", "La carpeta de esta sesión no existe.")
 
     """
     Play or stop audio when the button is clicked.

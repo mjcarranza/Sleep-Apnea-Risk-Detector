@@ -1,9 +1,11 @@
 import cv2
 import os
 import time
-
 import pygame
+from datetime import datetime
 from dataAcquisition.microphoneInput import get_next_session_number, get_next_photo_number, increment_photo_number
+
+
 
 
 ALARM_SOUNDS_DIR = "assets/alarm_sounds"
@@ -26,10 +28,10 @@ def takePhoto():
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
 
     # Wait one second for the camera to be ready
-    time.sleep(1)
+    time.sleep(5)
 
     # Read some frames "dummy"
-    for _ in range(5):
+    for _ in range(15):
         cap.read()
 
     ret, frame = cap.read()
@@ -38,9 +40,26 @@ def takePhoto():
         cap.release()
         return None
 
+    # Get date and time
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    # Write date and time in the photo
+    font = cv2.FONT_HERSHEY_SIMPLEX
+    font_scale = 1
+    color = (0, 255, 0)  # Green color
+    thickness = 2
+    margin = 20
+
+    # Get text size to paste it
+    (text_width, text_height), _ = cv2.getTextSize(timestamp, font, font_scale, thickness)
+    x = frame.shape[1] - text_width - margin
+    y = frame.shape[0] - margin
+
+    cv2.putText(frame, timestamp, (x, y), font, font_scale, color, thickness, cv2.LINE_AA)
+
     # Get actual session folder direction
     session_num = get_next_session_number()
-    session_dir = os.path.join("data", "raw", f"Session{session_num}")
+    session_dir = os.path.join("data", "raw", f"Session{session_num}", "Images")
     os.makedirs(session_dir, exist_ok=True)
 
     # Get actual image index
@@ -53,7 +72,6 @@ def takePhoto():
 
     # Increment photo index
     increment_photo_number()
-
     cap.release()
     cv2.destroyAllWindows()
 
@@ -76,13 +94,14 @@ def triggerEmergencyAlarm():
     pygame.mixer.music.stop()
 
 
-# test
-#takePhoto()
-#triggerEmergencyAlarm()
-"""
-time.sleep(1) → espera 1 segundo tras abrir la cámara.
+'''
+Get date and time when the photo was taken
+'''
+def getPhotoDatetime(file_path: str) -> str:
+    if not os.path.exists(file_path):
+        raise FileNotFoundError(f"No se encontró la foto: {file_path}")
 
-Lee 5 frames descartados antes de capturar el bueno.
-
-Esto permite que la cámara ajuste exposición, balance de blancos y nitidez.
-"""
+    # Fecha de última modificación (puedes cambiar a getctime para creación)
+    timestamp = os.path.getmtime(file_path)
+    dt = datetime.fromtimestamp(timestamp)
+    return dt.strftime("%Y-%m-%d %H:%M:%S")

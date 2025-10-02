@@ -126,7 +126,7 @@ def process_audio_and_update_dataset(wav_path, finished, sample_rate=16000, segm
 
     gender = 1 if gender_str.lower() == "female" else 0 if gender_str.lower() == "male" else 2
 
-    print(f"[INFO] Processing audio in segments of {segment_duration} secunds...")
+    print(f"[INFO] Processing audio in segments of {segment_duration} seconds...")
 
     # Process user's (audio) data
     for i in range(0, len(audio), samples_per_segment):
@@ -151,40 +151,45 @@ def process_audio_and_update_dataset(wav_path, finished, sample_rate=16000, segm
             has_apnea = bool(apnea_model.predict(input_data)[0])
             needs_treatment = bool(treatment_model.predict(input_data)[0])
 
-            # In case snoring is detected, call the module to take a picture
+            # In case snoring or apnea is detected, call the module to take a picture
             # Previously has_snoring is set to True or False
             # determination of sleeping position
-            if has_snoring:
+            if (not finished) and (has_snoring or has_apnea):
                 # call module to take a photo
-                print("[INFO]: Taking a picture")
+                print("[INFO]: Breathing problems detected. \nTaking a picture...")
                 img_dir = takePhoto()
                 # call Image processing module/predict posture
                 prediction = predict_posture(img_dir)
+                # Add prediction to a list of predictions using the JSON file
+
                 # in case it is a bad position
                 if prediction == "supine":
                     # call method to trigger emergency alarm
+                    print("[INFO]: Bad position detected: ", prediction)
                     positionList.append(True)
-            
-            '''HERE WE COULD USE AN ALARM IF ITS JUST SNORING, AND OTHER ONE IF THERE'S SNORING WITH DETECTED APNEA'''
+                    triggerEmergencyAlarm()
+                else:
+                    print("[INFO]: No bad positions detected.\nThe prediction is: ", prediction)
+        
+            else:
+                row = {
+                    'Sleep_Session': session,
+                    'Start_Time': i // sample_rate,
+                    'End_Time': (i + samples_per_segment) // sample_rate,
+                    'Age': age,
+                    'Gender': gender,
+                    'BMI': bmi,
+                    'Snoring_Intensity': snoring_rms,
+                    'Snoring': has_snoring,
+                    'Nasal_Airflow': nasal_airflow,
+                    'Spectral_Centroid': spectral_centroid,
+                    'Snore_Energy': snore_energy,
+                    'Decibel_Level_dB': decibel_level,
+                    'Has_Apnea': has_apnea,
+                    'Treatment_Required': needs_treatment
+                }
 
-            row = {
-                'Sleep_Session': session,
-                'Start_Time': i // sample_rate,
-                'End_Time': (i + samples_per_segment) // sample_rate,
-                'Age': age,
-                'Gender': gender,
-                'BMI': bmi,
-                'Snoring_Intensity': snoring_rms,
-                'Snoring': has_snoring,
-                'Nasal_Airflow': nasal_airflow,
-                'Spectral_Centroid': spectral_centroid,
-                'Snore_Energy': snore_energy,
-                'Decibel_Level_dB': decibel_level,
-                'Has_Apnea': has_apnea,
-                'Treatment_Required': needs_treatment
-            }
-
-            all_rows.append(row)
+                all_rows.append(row)
 
     # In case the session is finished, save the processed data 
     if finished:

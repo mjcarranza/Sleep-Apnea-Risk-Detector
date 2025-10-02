@@ -493,7 +493,7 @@ class RecordingScreen(ctk.CTkFrame):
         # time.sleep(5)
         
         # Custom message to stop music manually
-        CustomMessageBox(self, title="Session Saved", message="This session has been saved.", on_ok=self.stop_alarm)
+        CustomMessageBox(self, title="Information", message="Bad position a Snoring detected, please change your sleeping position. \n Ok to stop alarm!", on_ok=self.stop_alarm)
 
 
 
