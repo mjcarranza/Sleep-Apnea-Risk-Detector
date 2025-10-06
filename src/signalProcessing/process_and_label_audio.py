@@ -11,6 +11,7 @@ import joblib
 from scipy.signal import butter, lfilter
 from imageProcessing.ImageProcessingModule import predict_posture
 from dataAcquisition.cameraInput import takePhoto, triggerEmergencyAlarm
+from dataAcquisition.microphoneInput import get_next_photo_number
 
 # Cargar modelos previamente entrenados
 apnea_model = joblib.load("data/models/apnea-prediction-model.pkl")
@@ -127,6 +128,7 @@ def process_audio_and_update_dataset(wav_path, finished, sample_rate=16000, segm
     gender = 1 if gender_str.lower() == "female" else 0 if gender_str.lower() == "male" else 2
 
     print(f"[INFO] Processing audio in segments of {segment_duration} seconds...")
+    positionList = []
 
     # Process user's (audio) data
     for i in range(0, len(audio), samples_per_segment):
@@ -160,7 +162,12 @@ def process_audio_and_update_dataset(wav_path, finished, sample_rate=16000, segm
                 img_dir = takePhoto()
                 # call Image processing module/predict posture
                 prediction = predict_posture(img_dir)
-                # Add prediction to a list of predictions using the JSON file
+                
+                # Get actual image index
+                imgIdx = get_next_photo_number() - 1 # minus 1 because the given is for the nex image
+                
+                # Rename the taken image
+                renameImage(img_dir, prediction + "_" + str(imgIdx))
 
                 # in case it is a bad position
                 if prediction == "supine":
@@ -212,3 +219,16 @@ def process_audio_and_update_dataset(wav_path, finished, sample_rate=16000, segm
     
     # if there is not bad positions detected
     else: return False
+
+"""
+Set a new name for the analyzed image.
+"""
+def renameImage(old_path, new_name):
+    
+    folder = os.path.dirname(old_path)          # actual folder
+    extension = os.path.splitext(old_path)[1]   # extension (ej: .jpg, .png)
+    new_path = os.path.join(folder, new_name + extension)
+
+    os.rename(old_path, new_path)
+    print(f"✅ Imagen renamed: {old_path} -> {new_path}")
+    

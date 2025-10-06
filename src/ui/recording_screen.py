@@ -1,4 +1,6 @@
 import os
+import queue
+import threading
 import customtkinter as ctk
 import soundfile as sf
 import time
@@ -207,6 +209,13 @@ class RecordingScreen(ctk.CTkFrame):
         )
         self.cancel_button.pack(side="left", padx=10)
 
+        # queue to save audio chunks 
+        self.q = queue.Queue()
+        self.segment_samples = self.sample_rate * 10
+        self.segment_index = 0
+        self.processor_thread = threading.Thread(target=self.segment_processor, daemon=True)
+        self.processor_thread.start()
+
     '''
     Get all available input devices
     '''
@@ -282,37 +291,43 @@ class RecordingScreen(ctk.CTkFrame):
         volume = np.linalg.norm(indata) / np.sqrt(len(indata))
         self.volume_level = min(volume * 5, 1.0)
         self.audio_data.append(indata.copy())
-        self.segment_buffer.append(indata.copy())
 
-        # Check if there are enough samples for 10s
-        total_samples = sum(chunk.shape[0] for chunk in self.segment_buffer)
-        if total_samples >= self.segment_samples:
-            self.segment_index += 1
-            segment_np = np.concatenate(self.segment_buffer, axis=0)[:self.segment_samples]
+        # 🚀 En lugar de procesar aquí, mandamos el chunk a la cola
+        self.q.put(indata.copy())
 
-            # Save audio file
-            session_num = get_next_session_number()
-            session_dir = os.path.join("data", "raw", f"Session{session_num}")
-            os.makedirs(session_dir, exist_ok=True)
-            file_path = os.path.join(session_dir, f"segment_{self.segment_index}.wav")
-            sf.write(file_path, segment_np, self.sample_rate)
-            print(f"[INFO] Segment {self.segment_index} saved in: {file_path}")
+    def segment_processor(self):
+            """Corre en un hilo aparte: arma segmentos de 10s y los procesa"""
+            buffer = []
+            while True:
+                chunk = self.q.get()  # Espera un bloque
+                buffer.append(chunk)
+                total_samples = sum(c.shape[0] for c in buffer)
 
-            # Process segment
-            try:
-                result = process_audio_and_update_dataset(file_path, False)
-                # in case there is a bad position detected
-                if result: 
-                    print("[INFO]: Bad position detected, please get another one!")
-                    self.triggerEmergencyAlarm()
-                # Print the informaation anyway
-                print(f"[INFO] Porcessed segment: {self.segment_index}")
-            except Exception as e:
-                print(f"[ERROR] Failed processing segment: {self.segment_index}: {e}")
+                if total_samples >= self.segment_samples:
+                    self.segment_index += 1
+                    segment_np = np.concatenate(buffer, axis=0)[:self.segment_samples]
 
-            # Reset buffer
-            remaining = np.concatenate(self.segment_buffer, axis=0)[self.segment_samples:]
-            self.segment_buffer = [remaining] if remaining.size > 0 else []
+                    # Guardar archivo
+                    session_num = get_next_session_number()
+                    session_dir = os.path.join("data", "raw", f"Session{session_num}")
+                    os.makedirs(session_dir, exist_ok=True)
+                    file_path = os.path.join(session_dir, f"segment_{self.segment_index}.wav")
+                    sf.write(file_path, segment_np, self.sample_rate)
+                    print(f"[INFO] Segment {self.segment_index} saved in: {file_path}")
+
+                    # Procesar archivo
+                    try:
+                        result = process_audio_and_update_dataset(file_path, False)
+                        if result:
+                            print("[INFO]: Bad position detected, please get another one!")
+                            self.triggerEmergencyAlarm()
+                        print(f"[INFO] Processed segment: {self.segment_index}")
+                    except Exception as e:
+                        print(f"[ERROR] Failed processing segment {self.segment_index}: {e}")
+
+                    # Reiniciar buffer con muestras sobrantes
+                    remaining = np.concatenate(buffer, axis=0)[self.segment_samples:]
+                    buffer = [remaining] if remaining.size > 0 else []
 
     '''
     Start recordin audio

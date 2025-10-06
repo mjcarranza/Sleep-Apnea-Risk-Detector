@@ -28,7 +28,7 @@ def takePhoto():
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
 
     # Wait one second for the camera to be ready
-    time.sleep(5)
+    time.sleep(2)
 
     # Read some frames "dummy"
     for _ in range(15):
@@ -105,3 +105,14 @@ def getPhotoDatetime(file_path: str) -> str:
     timestamp = os.path.getmtime(file_path)
     dt = datetime.fromtimestamp(timestamp)
     return dt.strftime("%Y-%m-%d %H:%M:%S")
+
+"""
+Returns a list with the names of the files in a folder
+"""
+def getFileNames(folder_path):
+    if not os.path.exists(folder_path):
+        print(f"[INFO] Carpeta no encontrada: {folder_path}")
+        return []
+
+    # Solo nombres (sin rutas completas)
+    return [f for f in os.listdir(folder_path) if os.path.isfile(os.path.join(folder_path, f))]

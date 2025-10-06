@@ -10,7 +10,7 @@ import simpleaudio as sa
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from reportGeneration.reportGenerator import generate_report, generate_full_report
-from dataAcquisition.cameraInput import getPhotoDatetime
+from dataAcquisition.cameraInput import getPhotoDatetime, getFileNames
 import numpy as np
 import shutil
 
@@ -244,7 +244,7 @@ class DataVisualization(ctk.CTkFrame):
                 title_label = ctk.CTkLabel(
                     session_frame,
                     text="Apnea Events Detected",
-                    font=ctk.CTkFont(size=15, weight="bold"),
+                    font=ctk.CTkFont(size=25, weight="bold"),
                     text_color="white"
                 )
                 title_label.pack(pady=(10, 5))
@@ -275,6 +275,7 @@ class DataVisualization(ctk.CTkFrame):
                     for col_idx, value in enumerate(values):
                         value_label = ctk.CTkLabel(table_frame, text=value, font=cell_font, text_color="white")
                         value_label.grid(row=row_idx, column=col_idx, padx=10, pady=4)
+            
             else:
                 # No apnea events found
                 no_apnea_label = ctk.CTkLabel(
@@ -284,11 +285,63 @@ class DataVisualization(ctk.CTkFrame):
                     text_color="#BBBBBB"
                 )
                 no_apnea_label.pack(pady=(10, 5))
+            
+            # Get the taken images
+            imagesPath = os.path.join(AUDIO_FOLDER, f"Session{session_id}", "Images")
+            imagesNameList = getFileNames(imagesPath)
+            
+            if len(imagesNameList) > 0: # show the list of detected positions with date and time according to the taken images
+                # Title
+                title_label = ctk.CTkLabel(
+                    session_frame,
+                    text="Information of Captured Images",
+                    font=ctk.CTkFont(size=25, weight="bold"),
+                    text_color="white"
+                )
+                title_label.pack(pady=(10, 5))
+
+                # Container
+                table_container = ctk.CTkFrame(session_frame, fg_color="transparent")
+                table_container.pack(pady=(5, 20))
+
+                table_frame = ctk.CTkFrame(table_container, fg_color="#1E1E2F", corner_radius=8)
+                table_frame.grid(row=0, column=0)
+
+                # Table headers
+                headers = ["Date and Time", "Sleeping Position Detected"]
+                header_font = ctk.CTkFont(size=20, weight="bold")
+                cell_font = ctk.CTkFont(size=20)
+
+                for i, header in enumerate(headers):
+                    header_label = ctk.CTkLabel(table_frame, text=header, font=header_font, text_color="white")
+                    header_label.grid(row=0, column=i, padx=10, pady=6)
+
+                # Table rows: iterate through images
+                for row_idx, image_name in enumerate(imagesNameList, start=1):
+                    image_path = os.path.join(imagesPath, image_name)
+
+                    # Get date and time for the picture
+                    dt = getPhotoDatetime(image_path)
+                    name_only, ext = os.path.splitext(image_name)
+                    values = [dt, name_only]
+
+                    for col_idx, value in enumerate(values):
+                        value_label = ctk.CTkLabel(table_frame, text=value, font=cell_font, text_color="white")
+                        value_label.grid(row=row_idx, column=col_idx, padx=10, pady=4)
+
 
             # Audio waveform plot
             audio_path = os.path.join(AUDIO_FOLDER, f"Session{session_id}", "audio.wav")
             if os.path.exists(audio_path):
                 try:
+                    title_label = ctk.CTkLabel(
+                        session_frame,
+                        text="Recorded Audio",
+                        font=ctk.CTkFont(size=25, weight="bold"),
+                        text_color="white"
+                    )
+                    title_label.pack(pady=(10, 5))
+
                     with wave.open(audio_path, 'rb') as wf:
                         framerate = wf.getframerate()
                         n_frames = wf.getnframes()
@@ -318,10 +371,14 @@ class DataVisualization(ctk.CTkFrame):
                 except Exception as e:
                     print(f"[ERROR] Error processing audio: {e}")
 
-                # Audio play/stop button
-                play_button = ctk.CTkButton(
-                    session_frame,
-                    text="▶ Play",
+                # Button container
+                button_container = ctk.CTkFrame(session_frame, fg_color="transparent")
+                button_container.pack(pady=(5, 10))
+
+                # Button for playing the recorded audio
+                play_button_1 = ctk.CTkButton(
+                    button_container,
+                    text="▶ Play Audio",
                     font=ctk.CTkFont(size=18),
                     width=80,
                     fg_color="#7b4fff",
@@ -330,8 +387,22 @@ class DataVisualization(ctk.CTkFrame):
                     corner_radius=10,
                     command=lambda p=audio_path, b=None: self.toggle_audio(p, b)
                 )
-                play_button.configure(command=lambda p=audio_path, b=play_button: self.toggle_audio(p, b))
-                play_button.pack(pady=(5, 10))
+                play_button_1.configure(command=lambda p=audio_path, b=play_button_1: self.toggle_audio(p, b))
+                play_button_1.pack(side="left", padx=5)
+
+                # Button to open the audio's location
+                play_button_2 = ctk.CTkButton(
+                    button_container,
+                    text="Open Audio Location",
+                    font=ctk.CTkFont(size=18),
+                    width=80,
+                    fg_color="#7b4fff",
+                    hover_color="#a175ff",
+                    text_color="white",
+                    corner_radius=10,
+                    command=lambda sid=session_id: self.openSessionFolder(sid)
+                )
+                play_button_2.pack(side="left", padx=5)
 
     """
     Counts how many images (JPG and PNG) in the folder.
@@ -343,18 +414,31 @@ class DataVisualization(ctk.CTkFrame):
         return len([f for f in os.listdir(session_dir) if f.lower().endswith((".jpg", ".png"))])
 
 
+    """
+    Opens the folder for the captured images.
+    """
     def open_session_images(self, session_id):
-        """
-        Abre el explorador de archivos en la carpeta de la sesión seleccionada.
-        """
         session_dir = os.path.join(AUDIO_FOLDER, f"Session{session_id}","Images")
         if os.path.exists(session_dir):
             try:
                 subprocess.Popen(["xdg-open", session_dir])
             except Exception as e:
-                messagebox.showerror("Error", f"No se pudo abrir la carpeta:\n{e}")
+                messagebox.showerror("Error", f"Could not open folder:\n{e}")
         else:
-            messagebox.showinfo("Info", "La carpeta de esta sesión no existe.")
+            messagebox.showinfo("Info", "The requested folder does not exist.")
+
+    """
+    Opens the folder for the recorded audio.
+    """
+    def openSessionFolder(self, session_id):
+        session_dir = os.path.join(AUDIO_FOLDER, f"Session{session_id}")
+        if os.path.exists(session_dir):
+            try:
+                subprocess.Popen(["xdg-open", session_dir])
+            except Exception as e:
+                messagebox.showerror("Error", f"Could not open the containing folder:\n{e}")
+        else:
+            messagebox.showinfo("Info", "The requested folder does not exist.")
 
     """
     Play or stop audio when the button is clicked.

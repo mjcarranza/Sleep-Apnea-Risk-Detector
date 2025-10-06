@@ -67,10 +67,10 @@ def takePhoto():
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
 
     # Wait one second for the camera to be ready
-    time.sleep(2)
+    time.sleep(1)
 
     # Read some frames "dummy"
-    for _ in range(15):
+    for _ in range(5):
         cap.read()
 
     ret, frame = cap.read()
