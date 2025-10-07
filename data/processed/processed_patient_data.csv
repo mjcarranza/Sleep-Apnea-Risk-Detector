@@ -1,4 +1,4 @@
-Sleep_Session,Start_Time,End_Time,Age,Gender,BMI,Snoring_Intensity,Snoring,Nasal_Airflow,Spectral_Centroid,Has_Apnea,Treatment_Required,Snore_Energy,Decibel_Level_dB,Decibel_Level
+Sleep_Session,Start_Time,End_Time,Age,Gender,BMI,Snoring_Intensity,Snoring,Nasal_Airflow,Spectral_Centroid,Has_Apnea,Treatment_Required,Snore_Energy,Decibel_Level_dB,
 1,0,5,25,0,24.68,0.042975213,True,0.4574505790734824,1323.503263818658,False,False,43624.062742498754,-25.63440992113335,
 1,5,10,25,0,24.68,0.11279677,False,0.5,1468.2662537675517,False,True,95194.75812168422,-16.745407726218627,
 1,10,15,25,0,24.68,0.08520553,True,0.5,1524.184248965587,False,False,64592.34008360159,-19.84344859158244,
