@@ -1,7 +1,7 @@
 import customtkinter as ctk
 import json
 import os
-from src.ui.paths import TERMS_PATH
+from ui.paths import TERMS_PATH
 
 '''
 This is a class for a window in the application that is going to show the terms and conditions of using the application
@@ -27,39 +27,52 @@ class TermsAndConditionsScreen(ctk.CTkFrame):
             "By using this application, you agree to the following terms and conditions.\n"
             "\n"
             "1. Acceptance of Terms\n"
-            "By using this application, you agree to be bound by these Terms and Conditions. If you do not agree with any part of these terms, you must not use the application.\n"
+            "By using this application, you agree to be bound by these Terms and Conditions. "
+            "If you do not agree with any part of these terms, you must not use this application.\n"
             "\n"
             "2. Purpose of the Application\n"
-            "This application is intended solely for the collection and analysis of data related to breathing and snoring patterns during sleep to help detect possible obstructive sleep apnea events. The results provided are for informational purposes only and do not constitute medical diagnosis.\n"
+            "This application is intended solely for the collection and analysis of data related to breathing, "
+            "snoring, and sleeping posture in order to assist in the early detection of possible obstructive sleep apnea events. "
+            "The results provided are for informational purposes only and do not constitute a final medical diagnosis.\n"
             "\n"
             "3. Data Collected\n"
-            "During the use of the application, the following personal and physiological data are collected:\n"
+            "During the use of the application, the following personal and physiological data may be collected to deliver a better diagnose:\n"
             "- Name and age\n"
             "- Gender\n"
             "- Body Mass Index (BMI)\n"
             "- Neck circumference\n"
             "- Audio recordings of breathing and snoring during sleep\n"
+            "- Images captured by the camera to estimate body posture during sleep\n"
             "\n"
             "4. Use of Data\n"
-            "The collected data will be used exclusively for:\n"
-            "- Processing via artificial intelligence algorithms\n"
-            "- Generation of individual reports\n"
-            "- Improving the accuracy of the analysis models within the local application context\n"
+            "The collected data will be used exclusively for the following purposes:\n"
+            "- Processing and analysis through artificial intelligence algorithms\n"
+            "- Detection of apnea events and identification of sleeping posture\n"
+            "- Generation of individual reports and personalized recommendations\n"
+            "- Improving the accuracy of the analysis models within the local application context\n" # may not be ok
             "\n"
-            "No data will be transmitted, shared, or stored on remote servers or cloud services. All information remains on the user's device.\n"
+            "The images captured for posture detection are processed locally on the device "
+            "to extract body joint positions (key points) and are not transmitted, shared, or stored externally. "
+            "These images remain exclusively on the user's device and are not used by the application beyond the extraction of body joints for posture prediction.\n"
             "\n"
             "5. Data Security\n"
-            "Reasonable measures will be taken to protect the data stored on the device. However, the user is responsible for the physical security and access to their own equipment.\n"
+            "Reasonable measures will be taken to protect the data stored on the device. "
+            "However, the user is responsible for the physical security of their device and for controlling access to it.\n"
             "\n"
             "6. Limitation of Liability\n"
-            "The application provides indicative results based on the analysis of audio signals and personal data but does not replace professional medical consultation, diagnosis, or treatment. The developer assumes no responsibility for health-related decisions made solely based on the application's results.\n"
+            "The application provides indicative results based on the analysis of audio, image, and physiological data, "
+            "but it does not replace professional medical consultation, diagnosis, or treatment. "
+            "The developer assumes no responsibility for health-related decisions made solely based on the application's results, since they are for informative purposes only.\n"
             "\n"
             "7. Copyright\n"
-            "The application, its source code, interface, and functionalities are the property of the developer and are protected by copyright laws. Unauthorized distribution is prohibited.\n"
+            "The application, its source code, interface, and functionalities are the property of the developer and are protected by copyright laws. "
+            "Unauthorized copying, distribution, or modification is prohibited.\n"
             "\n"
             "8. Changes to Terms\n"
-            "The developer reserves the right to modify these terms at any time. Updates will be notified within the application.\n"
+            "The developer reserves the right to modify these terms at any time. "
+            "Updates will be notified within the application.\n"
         )
+
 
         # Text box
         self.text_box = ctk.CTkTextbox(self, wrap="word", fg_color="#3a3a3a",

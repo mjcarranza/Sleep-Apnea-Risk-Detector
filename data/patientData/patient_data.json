@@ -1,15 +1,15 @@
 {
     "patient": {
-        "name": "Mario Carranza",
-        "age": "25",
-        "sex": "Male",
-        "weight_(kg)": "73",
-        "height_(cm)": "172",
-        "bmi": "24.68",
-        "neck_circumference_(cm)": "65",
-        "regular_alcohol_use": "True",
-        "regular_sleep_difficulties": "True",
-        "familiar_apnea_history": "False",
-        "recordedSessions": 12
+        "name": "",
+        "age": "",
+        "sex": "",
+        "weight_(kg)": "",
+        "height_(cm)": "",
+        "bmi": "",
+        "neck_circumference_(cm)": "",
+        "regular_alcohol_use": "",
+        "regular_sleep_difficulties": "",
+        "familiar_apnea_history": "",
+        "recordedSessions": 1
     }
 }

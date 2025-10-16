@@ -1,4 +1,6 @@
 import os
+import queue
+import threading
 import customtkinter as ctk
 import soundfile as sf
 import time
@@ -7,10 +9,10 @@ import traceback
 import numpy as np
 import pygame
 from tkinter import messagebox
-from src.dataAcquisition.microphoneInput import get_next_session_number, increment_session_number
-from src.utils.custom_messagebox import CustomMessageBox
-from src.utils.custom_selectionbox import CustomTwoButtonMessageBox
-from src.signalProcessing.process_and_label_audio import process_audio_and_update_dataset
+from dataAcquisition.microphoneInput import get_next_session_number, increment_session_number, reset_photo_number
+from utils.custom_messagebox import CustomMessageBox
+from utils.custom_selectionbox import CustomTwoButtonMessageBox
+from signalProcessing.process_and_label_audio import process_audio_and_update_dataset
 
 # Paths for patient data and alarm sounds directory
 DB_PATH = "data/patientData/patient_data.json"
@@ -41,6 +43,10 @@ class RecordingScreen(ctk.CTkFrame):
         self.audio_data = []
         self.sample_rate = 44100
         self.alarm_set = False
+        self.segment_duration = 10  # segundos
+        self.segment_samples = self.segment_duration * self.sample_rate
+        self.segment_buffer = []
+        self.segment_index = 0
 
         # Set dark theme
         self.configure(fg_color="#1e1e2f")
@@ -203,6 +209,13 @@ class RecordingScreen(ctk.CTkFrame):
         )
         self.cancel_button.pack(side="left", padx=10)
 
+        # queue to save audio chunks 
+        self.q = queue.Queue()
+        self.segment_samples = self.sample_rate * 10
+        self.segment_index = 0
+        self.processor_thread = threading.Thread(target=self.segment_processor, daemon=True)
+        self.processor_thread.start()
+
     '''
     Get all available input devices
     '''
@@ -270,13 +283,51 @@ class RecordingScreen(ctk.CTkFrame):
         return None
 
     '''
+    In this method audio recordings of 10s each one are sent to the signal processing module, for it to check apnea episodes
     '''
-    def audio_callback(self, indata, status):
+    def audio_callback(self, indata, frames, time, status):
         if status:
             print(status)
         volume = np.linalg.norm(indata) / np.sqrt(len(indata))
         self.volume_level = min(volume * 5, 1.0)
         self.audio_data.append(indata.copy())
+
+        # 🚀 En lugar de procesar aquí, mandamos el chunk a la cola
+        self.q.put(indata.copy())
+
+    def segment_processor(self):
+            """Corre en un hilo aparte: arma segmentos de 10s y los procesa"""
+            buffer = []
+            while True:
+                chunk = self.q.get()  # Espera un bloque
+                buffer.append(chunk)
+                total_samples = sum(c.shape[0] for c in buffer)
+
+                if total_samples >= self.segment_samples:
+                    self.segment_index += 1
+                    segment_np = np.concatenate(buffer, axis=0)[:self.segment_samples]
+
+                    # Guardar archivo
+                    session_num = get_next_session_number()
+                    session_dir = os.path.join("data", "raw", f"Session{session_num}")
+                    os.makedirs(session_dir, exist_ok=True)
+                    file_path = os.path.join(session_dir, f"segment_{self.segment_index}.wav")
+                    sf.write(file_path, segment_np, self.sample_rate)
+                    print(f"[INFO] Segment {self.segment_index} saved in: {file_path}")
+
+                    # Procesar archivo
+                    try:
+                        result = process_audio_and_update_dataset(file_path, False)
+                        if result:
+                            print("[INFO]: Bad position detected, please get another one!")
+                            self.triggerEmergencyAlarm()
+                        print(f"[INFO] Processed segment: {self.segment_index}")
+                    except Exception as e:
+                        print(f"[ERROR] Failed processing segment {self.segment_index}: {e}")
+
+                    # Reiniciar buffer con muestras sobrantes
+                    remaining = np.concatenate(buffer, axis=0)[self.segment_samples:]
+                    buffer = [remaining] if remaining.size > 0 else []
 
     '''
     Start recordin audio
@@ -335,9 +386,9 @@ class RecordingScreen(ctk.CTkFrame):
     Stop playing alarm's sound
     '''
     def stop_alarm(self):
-        if pygame.mixer.music.get_busy():  # Verifica si hay música reproduciéndose
-            pygame.mixer.music.stop()      # Detiene la reproducción
-            self.alarm_triggered = False   # Resetea el estado de la alarma
+        if pygame.mixer.music.get_busy():  # Ckecks for actual playing music
+            pygame.mixer.music.stop()      # Stops playing music
+            self.alarm_triggered = False   # Resets alarm state
 
     '''
     Stop recording sleep session
@@ -383,7 +434,24 @@ class RecordingScreen(ctk.CTkFrame):
             processed_dir = os.path.join("data", "processed")
             os.makedirs(processed_dir, exist_ok=True)
 
-            process_audio_and_update_dataset(wav_path=file_path)
+            start = time.time()
+            process_audio_and_update_dataset(file_path, True) # wav_path=file_path??
+
+            # reset photo index to 1 for next session
+            reset_photo_number()
+
+            # Delete audio segments
+            for f in os.listdir(session_dir):
+                if f.startswith("segment_") and f.endswith(".wav"):
+                    try:
+                        os.remove(os.path.join(session_dir, f))
+                        print(f"[INFO] Deleted temporal segment: {f}")
+                    except Exception as e:
+                        print(f"[WARN] Couldn't delete temporal segment {f}: {e}")
+
+
+            end = time.time()
+            print(f"Audio processing time: {end - start:.4f} seconds")
             increment_session_number()
             CustomMessageBox(self, title="Session Saved", message="This session has been saved.", on_ok=self.stop_alarm)
         # In case there's an error saving the actual session
@@ -407,7 +475,7 @@ class RecordingScreen(ctk.CTkFrame):
                          on_cancel=self.on_cancel_action)
     
     '''
-    Informtion on cancel selection
+    Information on cancel selection
     '''
     def on_cancel_action():
         print("Action Canceled")
@@ -424,3 +492,24 @@ class RecordingScreen(ctk.CTkFrame):
             self.stream = None
         self.audio_level.set(0)
         self.parent.show_frame("StartScreen")
+
+    '''
+    Set an alarm for emergency
+    '''
+    def triggerEmergencyAlarm(self):
+        # Initialize mixer
+        pygame.mixer.init()
+        # Play alarm
+        alarm_path = os.path.join(ALARM_SOUNDS_DIR, "Alarm 1.mp3")
+        pygame.mixer.music.load(alarm_path)
+        pygame.mixer.music.play()
+        
+        # Play for 5 seconds (check for usability) (just play alarm for 5 seconds) 
+        # time.sleep(5)
+        
+        # Custom message to stop music manually
+        CustomMessageBox(self, title="Information", message="Bad position a Snoring detected, please change your sleeping position. \n Ok to stop alarm!", on_ok=self.stop_alarm)
+
+
+
+#CustomMessageBox(self, title="Session Saved", message="This session has been saved.", on_ok=self.stop_alarm)

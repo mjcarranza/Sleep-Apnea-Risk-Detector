@@ -1,3 +1,6 @@
+"""
+This is the code used to train the treatment required prediction model
+"""
 import joblib
 import pandas as pd
 from sklearn.ensemble import RandomForestClassifier

@@ -1,3 +1,7 @@
+"""
+This is the code used to train the apnea prediction model
+"""
+
 import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import RandomizedSearchCV
@@ -60,4 +64,5 @@ print(classification_report(y, y_pred))
 acc = accuracy_score(y, y_pred)
 print(f"Accuracy: {acc:.4f}")
 
+# Save the trained model
 joblib.dump(model_apnea, "apnea-prediction-model.pkl")
