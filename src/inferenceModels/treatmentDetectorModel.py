@@ -1,3 +1,6 @@
+"""
+This is the code used to train the treatment required prediction model
+"""
 import joblib
 import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
@@ -32,4 +35,4 @@ print("Confussion Matrix:")
 print(confusion_matrix(y_test_t, y_pred_t), "\n")
 
 # Save trained model
-#joblib.dump(model_treatment, "modelo_treatment_required_rf.pkl")
+joblib.dump(model_treatment, "modelo_treatment_required_rf.pkl")

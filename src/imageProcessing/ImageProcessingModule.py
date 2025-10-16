@@ -1,3 +1,6 @@
+"""
+This module is in charged of analyse and process each taken picture 
+"""
 import cv2
 import mediapipe as mp
 import joblib
@@ -38,16 +41,8 @@ def predict_posture(img_path):
 
     # Prediction
     pred = clf.predict(modelArray)[0]
-    #proba = clf.predict_proba(modelArray)[0]
-
+    # Prediction probability
+    proba = clf.predict_proba(modelArray)[0]
+    print("The prediction probability is: " + proba)
+    
     return pred
-
-
-
-'''
-# Use case
-imagen = "assets/captura_1080p.jpg"
-prediccion = predict_posture(imagen)
-print(f"🔎 Predicción: {prediccion[0]}")
-#print(f"📊 Probabilidades: {probabilidades}")
-'''

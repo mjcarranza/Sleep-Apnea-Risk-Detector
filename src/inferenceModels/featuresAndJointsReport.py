@@ -1,34 +1,37 @@
+"""
+This is the code used to get a report of the the main features that the model uses for its predictions
+"""
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 import joblib
 
-# Cargar dataset y modelo
+# Load model and image dataset
 df = pd.read_csv("assets/posturesJointsDataset.csv")
 clf = joblib.load("data/models/pose_classifier_rf.pkl")
 
-# Features y labels
+# Features and labels
 features = df.drop("label", axis=1).columns
 
-# Importancia de cada feature individual
+# Importance of every single feature according to the AI model
 importances = clf.feature_importances_
 
-# Crear DataFrame de importancia
+# Create importance features dataframe
 feat_imp = pd.DataFrame({"feature": features, "importance": importances})
 feat_imp = feat_imp.sort_values("importance", ascending=False)
 
-print("📊 Top 15 features más importantes:")
+print("Top 15 features more relevant:")
 print(feat_imp.head(15))
 
-# Graficar top 15
+# Graph top 15
 plt.figure(figsize=(10,6))
 plt.barh(feat_imp["feature"].head(15), feat_imp["importance"].head(15))
 plt.gca().invert_yaxis()
-plt.title("Top 15 features más importantes (Random Forest)")
-plt.xlabel("Importancia")
+plt.title("Top 15 features more relevant (Random Forest)")
+plt.xlabel("Importance")
 plt.show()
 
-# 🔹 Agrupar por joint (x,y,z,vis de cada landmark)
+# Group per joint (x,y,z,vis of each landmark)
 joint_importances = {}
 for i in range(33):
     joint_feats = [f"x_{i}", f"y_{i}", f"z_{i}", f"vis_{i}"]
@@ -36,20 +39,24 @@ for i in range(33):
         feat_imp["feature"].isin(joint_feats)
     ]["importance"].sum()
 
-# Ordenar por importancia
+# Order per relevance
 joint_importances = dict(sorted(joint_importances.items(), key=lambda x: x[1], reverse=True))
 
-print("\n📊 Importancia por joint:")
+print("\nImportance per joint:")
 for joint, score in list(joint_importances.items())[:10]:
     print(f"{joint}: {score:.4f}")
 
-# Graficar top 10 joints
+# Graph top 10 joints
 plt.figure(figsize=(10,6))
 plt.barh(list(joint_importances.keys())[:10], list(joint_importances.values())[:10])
 plt.gca().invert_yaxis()
-plt.title("Top 10 joints más importantes (Random Forest)")
-plt.xlabel("Importancia acumulada (x,y,z,vis)")
+plt.title("Top 10 joints more relevant (Random Forest)")
+plt.xlabel("Acumulated importance (x,y,z,vis)")
 plt.show()
+
+
+
+
 
 
 ########----------------------- Sobre el grafico de 15 mas importantes ------------------########

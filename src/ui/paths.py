@@ -2,10 +2,10 @@
 
 import os
 
-# Ruta base del proyecto
+# Project's base path
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-# Rutas de datos
+# Data Paths
 JSON_PATH = os.path.join(BASE_DIR, "data", "patientData", "patient_data.json")
 CSV_PATH = os.path.join(BASE_DIR, "data", "processed", "processed_patient_data.csv")
 RAW_AUDIO_DIR = os.path.join(BASE_DIR, "data", "raw")

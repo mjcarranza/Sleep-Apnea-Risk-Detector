@@ -1,3 +1,7 @@
+"""
+This is the code used for training the sleep pose prediction model
+"""
+
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
@@ -43,5 +47,5 @@ print(classification_report(y_test, y_pred))
 print("\n📉 Confusion Matrix:")
 print(confusion_matrix(y_test, y_pred))
 
-
+# Save the trained model
 joblib.dump(clf, "pose_classifier_rf.pkl")

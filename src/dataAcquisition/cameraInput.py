@@ -1,3 +1,6 @@
+"""
+This module allows to take aphoto using an available camera in the system
+"""
 import cv2
 import os
 import time
@@ -5,9 +8,7 @@ import pygame
 from datetime import datetime
 from dataAcquisition.microphoneInput import get_next_session_number, get_next_photo_number, increment_photo_number
 
-
-
-
+# Where to find the alarm sounds
 ALARM_SOUNDS_DIR = "assets/alarm_sounds"
 
 '''

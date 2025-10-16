@@ -48,6 +48,6 @@ def generate_recommendations(age, sex, weight, height, bmi, neck_circumference, 
 
     # General recommendations
     recommendations.append("Avoid sleeping on your back; side sleeping reduces the likelihood of airway obstruction.")
-    recommendations.append("Consult a sleep specialist if you experience symptoms like loud snoring or breathing pauses.")
+    recommendations.append("Consult a sleep specialist if you experience symptoms like loud snoring or breathing pauses during sleep.")
 
     return recommendations

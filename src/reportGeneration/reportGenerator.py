@@ -1,3 +1,7 @@
+"""
+This module is in charged of generating PDF reports based in the analyzed audio and images data.
+"""
+
 import os
 import json
 import pandas as pd
@@ -11,40 +15,38 @@ from reportlab.lib import colors
 from recommendation.recommendation_engine import generate_recommendations
 from dataAcquisition.cameraInput import getPhotoDatetime, getFileNames
 
-# Import centralized paths for CSV and JSON data files
-from ui.paths import CSV_PATH, JSON_PATH
-
 # Constants for data paths and output directory
 JSON_PATH = "data/patientData/patient_data.json"
 CSV_PATH = "data/processed/processed_patient_data.csv"
 OUTPUT_DIR = "docs"
 AUDIO_FOLDER = "data/raw"
 
-
+"""
+Generates a summarized PDF report for a specific sleep session.
+"""
 def generate_report(session_number):
-    """Generates a summarized PDF report for a specific sleep session."""
 
-    # --- Ensure output directory exists ---
+    # Ensure output directory exists
     if not os.path.exists(OUTPUT_DIR):
         os.makedirs(OUTPUT_DIR)
 
-    # --- Load patient data ---
+    # Load patient data 
     with open(JSON_PATH, "r") as f:
         patient_data = json.load(f)["patient"]
 
-    # --- Load processed data ---
+    # Load processed data
     df = pd.read_csv(CSV_PATH)
     df["Session"] = df.groupby((df['Start_Time'] == 0).cumsum()).ngroup() + 1
     session_df = df[df["Session"] == session_number]
 
-    # --- Analyze the session ---
+    # Analyze the session 
     result = analyze_sleep_session(session_df)
 
-    # --- Add image predictions as table --- 
+    # Add image predictions as table 
     imagesPath = os.path.join(AUDIO_FOLDER, f"Session{session_number}", "Images")
     imagesNameList = getFileNames(imagesPath)
 
-    # --- Save path dialog ---
+    # Save path dialog
     root = tk.Tk()
     root.withdraw()
     file_path = filedialog.asksaveasfilename(
@@ -59,18 +61,18 @@ def generate_report(session_number):
         root.destroy()
         return
 
-    # --- Create PDF ---
+    # Create PDF 
     doc = SimpleDocTemplate(file_path, pagesize=A4)
     elements = []
     styles = getSampleStyleSheet()
 
-    # --- Title ---
+    # Title 
     elements.append(Paragraph('<font color="#4A90E2"><b>Sleep Apnea Detection System</b></font>', styles["Title"]))
     elements.append(Spacer(1, 20))
     elements.append(Paragraph(f"Patient Report - Sleep Session {session_number}", styles["Heading2"]))
     elements.append(Spacer(1, 20))
 
-    # --- Patient Info Table ---
+    # Patient Info Table
     patient_info = [
         ["Name", patient_data.get("name", "N/A")],
         ["Age", patient_data.get("age", "N/A")],
@@ -91,7 +93,7 @@ def generate_report(session_number):
     elements.append(patient_table)
     elements.append(Spacer(1, 20))
 
-    # --- Session Summary Table ---
+    # Session Summary Table
     session_summary = result["session_summary_row"]
     session_table_data = [["Duration\n(h)", "Total\nApneas", "Mean\nSnoring", "Snoring\nVariability", 
                            "Max\nDecibel", "Apnea\nRate (/h)", "Treatment\nRequired"]]
@@ -116,10 +118,10 @@ def generate_report(session_number):
     elements.append(Spacer(1, 20))
     
 
-    # --- Descriptive Statistics ---
+    # Descriptive Statistics
     desc = result["descriptive_table"].round(2).reset_index()
 
-    # 1️⃣ Define tus nombres personalizados aquí
+    # Define column names
     column_mapping = {
         "Snoring_Intensity": "Snoring\nIntensity",
         "Nasal_Airflow": "Nasal\nAirflow",
@@ -127,10 +129,10 @@ def generate_report(session_number):
         "Decibel_Level_dB": "Decibel\nLevel (dB)"
     }
 
-    # 2️⃣ Renombra las columnas según el diccionario (solo las que existan)
+    # Rename columns if they exist
     desc = desc.rename(columns={col: column_mapping.get(col, col) for col in desc.columns})
 
-    # 3️⃣ Construye la tabla con los nuevos nombres
+    # Build table
     desc_data = [desc.columns.tolist()] + desc.values.tolist()
     desc_table = Table(desc_data, hAlign="LEFT", colWidths=[80] + [60] * (len(desc.columns) - 1))
     desc_table.setStyle(TableStyle([
@@ -145,28 +147,28 @@ def generate_report(session_number):
     elements.append(Spacer(1, 20))
 
 
-    # --- Información de Imágenes Capturadas ---
+    # Captured images' information
     elements.append(Paragraph("Information of Captured Images", styles["Heading3"]))
     elements.append(Spacer(1, 10))
 
-    # Encabezados
+    # Headings
     headers = ["Date and Time", "Sleeping Position Detected"]
     data = [headers]
 
-    # Agregar filas desde las imágenes capturadas
+    # Add rows for captured images
     for image_name in imagesNameList:
         image_path = os.path.join(imagesPath, image_name)
 
-        # Obtiene fecha/hora del archivo
+        # Get date and time of the file
         dt = getPhotoDatetime(image_path)
         name_only, _ = os.path.splitext(image_name)
 
         data.append([dt, name_only])
 
-    # Crear la tabla en ReportLab
+    # Create table
     img_table = Table(data, hAlign="LEFT", colWidths=[180, 180])
     img_table.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#4A4A6A")),   # Encabezado oscuro
+        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#4A4A6A")),
         ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
         ("ALIGN", (0, 0), (-1, -1), "CENTER"),
         ("GRID", (0, 0), (-1, -1), 0.25, colors.grey),
@@ -179,7 +181,7 @@ def generate_report(session_number):
 
 
 
-    # --- Include Graphs ---
+    # Include Graphs
     if os.path.exists("apnea_pie_chart.png"):
         elements.append(Paragraph("Apnea Time Distribution", styles["Heading3"]))
         elements.append(Image("apnea_pie_chart.png", width=200, height=200))
@@ -190,7 +192,7 @@ def generate_report(session_number):
         elements.append(Image("sleep_session_summary.png", width=400, height=180))
         elements.append(Spacer(1, 20))
 
-    # --- Recommendations ---
+    # Recommendations
     recommendations = generate_recommendations(
         age=patient_data.get("age", 0),
         sex=patient_data.get("sex", "N/A"),
@@ -212,34 +214,35 @@ def generate_report(session_number):
     elements.append(Paragraph("Please check results with a doctor.", styles["Normal"]))
 
 
-    # --- Build PDF ---
+    # Build PDF
     doc.build(elements)
     print(f"[INFO] Report saved to: {file_path}")
     root.destroy()
 
-    # --- Delete temporary pie chart ---
+    # Delete temporary pie chart
     if os.path.exists("apnea_pie_chart.png"):
         os.remove("apnea_pie_chart.png")
     if os.path.exists("sleep_session_summary.png"):
         os.remove("sleep_session_summary.png")
 
-
+"""
+Generates a complete PDF report containing data from all recorded sleep sessions.
+"""
 def generate_full_report():
-    """Generates a complete PDF report containing data from all recorded sleep sessions."""
-
-    # --- Ensure CSV exists ---
+    
+    # Ensure CSV exists
     if not os.path.exists(CSV_PATH):
         print("[ERROR] CSV file not found.")
         return
 
-    # --- Load data ---
+    # Load data
     df = pd.read_csv(CSV_PATH)
     df["Session"] = df.groupby((df['Start_Time'] == 0).cumsum()).ngroup() + 1
 
     with open(JSON_PATH, "r") as f:
         patient_data = json.load(f)["patient"]
 
-    # --- Ask where to save ---
+    # Ask where to save
     root = tk.Tk()
     root.withdraw()
     file_path = filedialog.asksaveasfilename(
@@ -252,18 +255,18 @@ def generate_full_report():
         print("[INFO] Save operation cancelled.")
         return
 
-    # --- Setup PDF ---
+    # Setup PDF
     doc = SimpleDocTemplate(file_path, pagesize=A4)
     elements = []
     styles = getSampleStyleSheet()
 
-    # --- Title ---
+    # Title
     elements.append(Paragraph('<font color="#4A90E2"><b>Sleep Apnea Detection System</b></font>', styles["Title"]))
     elements.append(Spacer(1, 20))
     elements.append(Paragraph("Full Sleep Sessions Report", styles["Heading2"]))
     elements.append(Spacer(1, 20))
 
-    # --- Patient Info Table ---
+    # Patient Info Table
     patient_info = [
         ["Name", patient_data.get("name", "N/A")],
         ["Age", patient_data.get("age", "N/A")],
@@ -284,14 +287,14 @@ def generate_full_report():
     elements.append(patient_table)
     elements.append(Spacer(1, 20))
 
-    # --- Analyze all sessions ---
+    # Analyze all sessions
     for session_id, session_df in df.groupby("Session"):
         result = analyze_sleep_session(session_df)
 
         elements.append(Paragraph(f"<b>Sleep Session {session_id}</b>", styles["Heading2"]))
         elements.append(Spacer(1, 10))
 
-        # --- Session Summary Table ---
+        # Session Summary Table
         summary = result["session_summary_row"]
         summary_data = [["Duration\n(h)", "Total\nApneas", "Mean\nSnoring", "Snoring\nVariability",
                          "Max\nDecibel", "Apnea\nRate (/h)", "Treatment\nRequired"]]
@@ -314,7 +317,7 @@ def generate_full_report():
         elements.append(session_table)
         elements.append(Spacer(1, 15))
 
-        # --- Descriptive Statistics ---
+        # Descriptive Statistics
         desc = result["descriptive_table"].round(2).reset_index()
         column_mapping = {
             "Snoring_Intensity": "Snoring\nIntensity",
@@ -336,6 +339,7 @@ def generate_full_report():
         elements.append(desc_table)
         elements.append(Spacer(1, 20))
 
+        # Add charts to PDF
         if os.path.exists("apnea_pie_chart.png"):
             elements.append(Paragraph("Apnea Time Distribution", styles["Heading3"]))
             elements.append(Image("apnea_pie_chart.png", width=200, height=200))
@@ -346,7 +350,7 @@ def generate_full_report():
             elements.append(Image("sleep_session_summary.png", width=400, height=180))
             elements.append(Spacer(1, 20))
 
-    # --- Recommendations ---
+    # Recommendations
     recommendations = generate_recommendations(
         age=patient_data.get("age", 0),
         sex=patient_data.get("sex", "N/A"),
@@ -364,25 +368,27 @@ def generate_full_report():
     for rec in recommendations:
         elements.append(Paragraph(f"- {rec}", styles["Normal"]))
 
-    # --- Note section ---
+    # Note section
     elements.append(Paragraph("Note", styles["Heading3"]))
     elements.append(Paragraph("Remember that this is an AI detection system for Obstructive Sleeping Apnea (OSA). This report is for informating purposes only and does not replace a professional diagnosis.", styles["Normal"]))
     elements.append(Paragraph("Please check results with a doctor.", styles["Normal"]))
 
-    # --- Build PDF ---
+    # Build PDF
     doc.build(elements)
     print(f"[INFO] Full report saved to: {file_path}")
     root.destroy()
-    # --- Delete temporary pie chart ---
+
+    # Delete temporary pie chart
     if os.path.exists("apnea_pie_chart.png"):
         os.remove("apnea_pie_chart.png")
     if os.path.exists("sleep_session_summary.png"):
         os.remove("sleep_session_summary.png")
 
-
+"""
+Analyzes and summarizes a complete sleep session with statistics and plots.
+"""
 def analyze_sleep_session(session_df, interval_seconds=60, sample_window=5):
-    """Analyzes and summarizes a complete sleep session with statistics and plots."""
-
+    
     rows_per_interval = int(interval_seconds / sample_window)
     session_df = session_df.copy()
     session_df["Interval"] = (session_df.index // rows_per_interval)
@@ -425,7 +431,6 @@ def analyze_sleep_session(session_df, interval_seconds=60, sample_window=5):
     plt.close()
 
     # Pie chart
-
     apnea_ratio = [
         session_df["Has_Apnea"].sum(),
         len(session_df) - session_df["Has_Apnea"].sum()
@@ -438,7 +443,7 @@ def analyze_sleep_session(session_df, interval_seconds=60, sample_window=5):
     plt.savefig("apnea_pie_chart.png")
     plt.close()
 
-    resumen_sesion = pd.DataFrame([{
+    resume_sesion = pd.DataFrame([{
         "Sleep_Session": 1,
         "Duration_h": round(stats["duration_hours"], 2),
         "Total_Apneas": int(stats["total_apneas"]),
@@ -453,5 +458,5 @@ def analyze_sleep_session(session_df, interval_seconds=60, sample_window=5):
         "interval_summary": interval_summary,
         "session_stats": stats,
         "descriptive_table": desc,
-        "session_summary_row": resumen_sesion
+        "session_summary_row": resume_sesion
     }

@@ -153,9 +153,7 @@ def process_audio_and_update_dataset(wav_path, finished, sample_rate=16000, segm
             has_apnea = bool(apnea_model.predict(input_data)[0])
             needs_treatment = bool(treatment_model.predict(input_data)[0])
 
-            # In case snoring or apnea is detected, call the module to take a picture
-            # Previously has_snoring is set to True or False
-            # determination of sleeping position
+            # Determination of sleeping position. In case snoring or apnea is detected, call the module to take a picture
             if (not finished) and (has_snoring or has_apnea):
                 # call module to take a photo
                 print("[INFO]: Breathing problems detected. \nTaking a picture...")
@@ -177,7 +175,8 @@ def process_audio_and_update_dataset(wav_path, finished, sample_rate=16000, segm
                     triggerEmergencyAlarm()
                 else:
                     print("[INFO]: No bad positions detected.\nThe prediction is: ", prediction)
-        
+
+            # In case there is nothing to worry about, just add the data to the CSV
             else:
                 row = {
                     'Sleep_Session': session,

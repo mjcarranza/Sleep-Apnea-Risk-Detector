@@ -1,9 +1,15 @@
+"""
+MAIN FILE OF THE APLICATION.
+AUTHOR: MARIO JESUS CARRANZA CASTILLO
+INSTITUTION: TECNOLOGICO DE COSTA RICA (TEC)
+FINAL WORK FOR THE DEGREE OF LIC. EN INGENIERIA EN COMPUTADORES
+II SEMESTER 2025
+"""
 
-import customtkinter as ctk
 import sys
 import os
 import json
-
+import customtkinter as ctk
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from ui.start_screen import StartScreen
 from ui.profile_form import ProfileForm
@@ -12,6 +18,7 @@ from ui.data_visualization import DataVisualization
 from ui.terms_screen import TermsAndConditionsScreen
 from utils.data_utils import is_profile_complete
 from ui.paths import TERMS_PATH
+
 
 """
 This is the main method of the application
