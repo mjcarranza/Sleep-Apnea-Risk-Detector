@@ -9,10 +9,10 @@ import traceback
 import numpy as np
 import pygame
 from tkinter import messagebox
-from dataAcquisition.microphoneInput import get_next_session_number, increment_session_number, reset_photo_number
-from utils.custom_messagebox import CustomMessageBox
-from utils.custom_selectionbox import CustomTwoButtonMessageBox
-from signalProcessing.process_and_label_audio import process_audio_and_update_dataset
+from src.dataAcquisition.microphoneInput import get_next_session_number, increment_session_number, reset_photo_number
+from src.utils.custom_messagebox import CustomMessageBox
+from src.utils.custom_selectionbox import CustomTwoButtonMessageBox
+from src.signalProcessing.process_and_label_audio import process_audio_and_update_dataset
 
 # Paths for patient data and alarm sounds directory
 DB_PATH = "data/patientData/patient_data.json"

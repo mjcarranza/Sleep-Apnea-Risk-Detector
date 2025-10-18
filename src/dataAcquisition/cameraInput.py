@@ -6,7 +6,7 @@ import os
 import time
 import pygame
 from datetime import datetime
-from dataAcquisition.microphoneInput import get_next_session_number, get_next_photo_number, increment_photo_number
+from src.dataAcquisition.microphoneInput import get_next_session_number, get_next_photo_number, increment_photo_number
 
 # Where to find the alarm sounds
 ALARM_SOUNDS_DIR = "assets/alarm_sounds"

@@ -9,8 +9,8 @@ import subprocess
 import simpleaudio as sa
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-from reportGeneration.reportGenerator import generate_report, generate_full_report
-from dataAcquisition.cameraInput import getPhotoDatetime, getFileNames
+from src.reportGeneration.reportGenerator import generate_report, generate_full_report
+from src.dataAcquisition.cameraInput import getPhotoDatetime, getFileNames
 import numpy as np
 import shutil
 

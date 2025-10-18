@@ -1,8 +1,15 @@
-import customtkinter as ctk
+"""
+MAIN FILE OF THE APLICATION.
+AUTHOR: MARIO JESUS CARRANZA CASTILLO
+INSTITUTION: TECNOLOGICO DE COSTA RICA (TEC)
+FINAL WORK FOR THE DEGREE OF LIC. EN INGENIERIA EN COMPUTADORES
+II SEMESTER 2025
+"""
+
 import sys
 import os
 import json
-
+import customtkinter as ctk
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from src.ui.start_screen import StartScreen
 from src.ui.profile_form import ProfileForm
@@ -11,6 +18,7 @@ from src.ui.data_visualization import DataVisualization
 from src.ui.terms_screen import TermsAndConditionsScreen
 from src.utils.data_utils import is_profile_complete
 from src.ui.paths import TERMS_PATH
+
 
 """
 This is the main method of the application

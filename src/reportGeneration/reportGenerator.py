@@ -12,8 +12,8 @@ from reportlab.lib.pagesizes import A4
 from reportlab.platypus import (SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image)
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib import colors
-from recommendation.recommendation_engine import generate_recommendations
-from dataAcquisition.cameraInput import getPhotoDatetime, getFileNames
+from src.recommendation.recommendation_engine import generate_recommendations
+from src.dataAcquisition.cameraInput import getPhotoDatetime, getFileNames
 
 # Constants for data paths and output directory
 JSON_PATH = "data/patientData/patient_data.json"
