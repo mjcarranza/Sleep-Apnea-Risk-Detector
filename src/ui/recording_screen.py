@@ -91,6 +91,15 @@ class RecordingScreen(ctk.CTkFrame):
         self.audio_level.set(0)
         self.audio_level.grid(row=3, column=0, pady=(0, 10))
 
+        # Information label
+        self.alarm_info_label = ctk.CTkLabel(
+            self, 
+            text="Select a microphone to use:", 
+            font=ctk.CTkFont(size=16), 
+            text_color="white"
+        )
+        self.alarm_info_label.grid(row=4, column=0, pady=(10, 0))
+
         # Get all available input devices
         self.input_devices = self.get_input_devices()
         self.selected_device = ctk.StringVar(value=self.input_devices[0] if self.input_devices else "No mic found")
@@ -107,20 +116,20 @@ class RecordingScreen(ctk.CTkFrame):
             dropdown_text_color="white",
             dropdown_hover_color="#3a3a50"
         )
-        self.device_selector.grid(row=4, column=0, pady=(0, 10))
+        self.device_selector.grid(row=5, column=0, pady=(0, 10))
 
         # Information label
         self.alarm_info_label = ctk.CTkLabel(
             self, 
-            text="Seleccione la hora de la alarma y el tono deseado:", 
+            text="Select the time for the alarm and a tone for it:", 
             font=ctk.CTkFont(size=16), 
             text_color="white"
         )
-        self.alarm_info_label.grid(row=5, column=0, pady=(10, 0))
+        self.alarm_info_label.grid(row=6, column=0, pady=(10, 0))
 
         # Frame for time and alarm sound
         self.alarm_frame = ctk.CTkFrame(self, fg_color="transparent")
-        self.alarm_frame.grid(row=6, column=0, pady=(5, 10))
+        self.alarm_frame.grid(row=7, column=0, pady=(0, 10))
 
         # Select alarm time
         self.hour_var = ctk.StringVar(value="00")
@@ -177,7 +186,7 @@ class RecordingScreen(ctk.CTkFrame):
 
         # Record and cancel buttons
         self.button_frame = ctk.CTkFrame(self, fg_color="transparent")
-        self.button_frame.grid(row=7, column=0, pady=(10, 40))
+        self.button_frame.grid(row=8, column=0, pady=(10, 40))
 
         # Record button
         self.record_button = ctk.CTkButton(
@@ -292,14 +301,14 @@ class RecordingScreen(ctk.CTkFrame):
         self.volume_level = min(volume * 5, 1.0)
         self.audio_data.append(indata.copy())
 
-        # 🚀 En lugar de procesar aquí, mandamos el chunk a la cola
+        # Do not process, send to queue
         self.q.put(indata.copy())
 
     def segment_processor(self):
-            """Corre en un hilo aparte: arma segmentos de 10s y los procesa"""
+            """Runs on another thread: divides audio into 10s"""
             buffer = []
             while True:
-                chunk = self.q.get()  # Espera un bloque
+                chunk = self.q.get() 
                 buffer.append(chunk)
                 total_samples = sum(c.shape[0] for c in buffer)
 
@@ -307,7 +316,7 @@ class RecordingScreen(ctk.CTkFrame):
                     self.segment_index += 1
                     segment_np = np.concatenate(buffer, axis=0)[:self.segment_samples]
 
-                    # Guardar archivo
+                    # Save file
                     session_num = get_next_session_number()
                     session_dir = os.path.join("data", "raw", f"Session{session_num}")
                     os.makedirs(session_dir, exist_ok=True)
@@ -315,9 +324,10 @@ class RecordingScreen(ctk.CTkFrame):
                     sf.write(file_path, segment_np, self.sample_rate)
                     print(f"[INFO] Segment {self.segment_index} saved in: {file_path}")
 
-                    # Procesar archivo
+                    # Process file
                     try:
-                        result = process_audio_and_update_dataset(file_path, False)
+                        result = process_audio_and_update_dataset(file_path, False, session_num)
+                        self.delete_audio(session_dir)
                         if result:
                             print("[INFO]: Bad position detected, please get another one!")
                             self.triggerEmergencyAlarm()
@@ -325,12 +335,12 @@ class RecordingScreen(ctk.CTkFrame):
                     except Exception as e:
                         print(f"[ERROR] Failed processing segment {self.segment_index}: {e}")
 
-                    # Reiniciar buffer con muestras sobrantes
+                    # Reset buffer with remaining samples
                     remaining = np.concatenate(buffer, axis=0)[self.segment_samples:]
                     buffer = [remaining] if remaining.size > 0 else []
 
     '''
-    Start recordin audio
+    Start recording audio
     '''
     def start_audio_stream(self):
         mic_index = self.get_selected_device_index()
@@ -435,7 +445,7 @@ class RecordingScreen(ctk.CTkFrame):
             os.makedirs(processed_dir, exist_ok=True)
 
             start = time.time()
-            process_audio_and_update_dataset(file_path, True) # wav_path=file_path??
+            process_audio_and_update_dataset(file_path, True, session_num) # wav_path=file_path??
 
             # reset photo index to 1 for next session
             reset_photo_number()
@@ -464,6 +474,19 @@ class RecordingScreen(ctk.CTkFrame):
             self.record_button.configure(state="normal")
             self.cancel_button.configure(state="normal")
             self.parent.show_frame("StartScreen")
+
+    '''
+    Delete audio segments
+    '''
+    def delete_audio(self,session_dir):
+            for f in os.listdir(session_dir):
+                if f.startswith("segment_") and f.endswith(".wav"):
+                    try:
+                        os.remove(os.path.join(session_dir, f))
+                        print(f"[INFO] Deleted temporal segment: {f}")
+                    except Exception as e:
+                        print(f"[WARN] Couldn't delete temporal segment {f}: {e}")
+    
 
     '''
     Confirm to end the reccording session

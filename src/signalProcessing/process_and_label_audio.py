@@ -13,6 +13,7 @@ import joblib
 from src.imageProcessing.ImageProcessingModule import predict_posture
 from src.dataAcquisition.cameraInput import takePhoto, triggerEmergencyAlarm
 from src.dataAcquisition.microphoneInput import get_next_photo_number
+from src.utils.data_utils import update_session_summary
 
 # Device: GPU if available
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -23,7 +24,8 @@ treatment_model = joblib.load("data/models/treatment_required_model.pkl")
 
 # File paths
 output_csv = "data/processed/processed_patient_data.csv"
-json_path = "data/patientData/patient_data.json"
+summaries_dir = "data/summaries"
+
 
 # Helper functions
 def rescale_zcr(zcr_value, old_min=0.0, old_max=0.15, new_min=0.2, new_max=0.5):
@@ -84,7 +86,7 @@ def extract_features(segment, sample_rate):
     return rms, zcr_rescaled, spectral_centroid, snore_energy, decibel_level
 
 
-def process_audio_and_update_dataset(wav_path, finished, sample_rate=16000, segment_duration=5):
+def process_audio_and_update_dataset(wav_path, finished, session_num, sample_rate=16000, segment_duration=5):
     print(f"[INFO] Loading audio from {wav_path}")
     audio, sr = torchaudio.load(wav_path)
     
@@ -104,7 +106,7 @@ def process_audio_and_update_dataset(wav_path, finished, sample_rate=16000, segm
     
     all_rows = []
 
-    with open(json_path, "r") as file:
+    with open(patient_data, "r") as file:
         data = json.load(file)
         patient_data = data["patient"]
 
@@ -135,9 +137,13 @@ def process_audio_and_update_dataset(wav_path, finished, sample_rate=16000, segm
             for col in input_data.columns:
                 input_data[col] = pd.to_numeric(input_data[col], errors='coerce')
 
-            # Predictions
+            # Predict AOS and Treatment required
             has_apnea = bool(apnea_model.predict(input_data)[0])
             needs_treatment = bool(treatment_model.predict(input_data)[0])
+            
+            # add AOS counter
+            if (has_apnea):
+                update_session_summary(session_num, "eventsAOS", 1)
 
             # Image capture if needed
             if (not finished) and (has_snoring or has_apnea):
@@ -147,10 +153,14 @@ def process_audio_and_update_dataset(wav_path, finished, sample_rate=16000, segm
                 print(f"[INFO] Posture prediction: {prediction}")
                 imgIdx = get_next_photo_number() - 1
                 renameImage(img_dir, f"{prediction}_{imgIdx}")
+
                 if prediction == "supine":
                     print("[INFO]: Bad position detected!")
                     positionList.append(True)
+                    update_session_summary(session_num, prediction, 1) # add image counter
                     triggerEmergencyAlarm()
+                else:
+                    update_session_summary(session_num, prediction, 1) # add image counter
 
             # Store segment data
             row = {
@@ -170,6 +180,9 @@ def process_audio_and_update_dataset(wav_path, finished, sample_rate=16000, segm
                 'Treatment_Required': needs_treatment
             }
             all_rows.append(row)
+
+    # add duration counter
+    update_session_summary(session_num, "duration", 5)
 
     # Save CSV if session finished
     if finished:

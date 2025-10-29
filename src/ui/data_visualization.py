@@ -10,7 +10,7 @@ import simpleaudio as sa
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from src.reportGeneration.reportGenerator import generate_report, generate_full_report
-from src.dataAcquisition.cameraInput import getPhotoDatetime, getFileNames
+from src.utils.data_utils import read_session_summary, delete_session_json
 import numpy as np
 import shutil
 
@@ -18,6 +18,17 @@ import shutil
 JSON_PATH = "data/patientData/patient_data.json"
 CSV_PATH = "data/processed/processed_patient_data.csv"
 AUDIO_FOLDER = "data/raw"
+SUMMARIES_DIR = "data/summaries"
+
+# Mapa de claves JSON a nombres descriptivos
+DATA_LABELS = {
+    "eventsAOS": "Apnea events detected",
+    "duration": "Total duration of apneas (s)",
+    "supino": "Supine postures detected",
+    "lateral": "Lateral postures detected",
+    "prono": "Prone postures detected",
+    "fetal": "Fetal postures detected"
+}
 
 """
 Window frame to visualize patient data and sleep history.
@@ -156,26 +167,57 @@ class DataVisualization(ctk.CTkFrame):
         )
         generate_report_button.pack(pady=(10, 5))
 
-    """
-    Load and display all sleep session data from CSV.
-    """
-    def load_sleep_sessions(self):
-        if not os.path.exists(CSV_PATH):
-            return
+    '''
+    Create resume table
+    '''
+    def create_summary_table(self, parent_frame, session_summary, data_labels):
+        table_container = ctk.CTkFrame(parent_frame, fg_color="transparent")
+        table_container.pack(pady=(5, 20))
         
-        df = pd.read_csv(CSV_PATH)
-        df["Session"] = df.groupby((df['Start_Time'] == 0).cumsum()).ngroup() + 1
+        table_frame = ctk.CTkFrame(table_container, fg_color="#1E1E2F", corner_radius=8)
+        table_frame.grid(row=0, column=0)
 
-        for session_id, session_df in df.groupby("Session"):
-            # Create session frame
+        headers = ["Data", "Value"]
+        header_font = ctk.CTkFont(size=20, weight="bold")  # Solo headers en negrita
+        cell_font = ctk.CTkFont(size=20)                  # Filas normales
+
+        # Table headers
+        for i, header in enumerate(headers):
+            header_label = ctk.CTkLabel(table_frame, text=header, font=header_font, text_color="white")
+            header_label.grid(row=0, column=i, padx=10, pady=6)
+
+        # Table rows
+        for row_idx, key in enumerate(data_labels.keys(), start=1):
+            descriptive_name = data_labels[key]
+            value = session_summary.get(key, 0)  # Default 0
+
+            # Columna Data
+            ctk.CTkLabel(table_frame, text=descriptive_name, font=cell_font, text_color="white").grid(
+                row=row_idx, column=0, padx=10, pady=4
+            )
+            # Columna Value
+            ctk.CTkLabel(table_frame, text=str(value), font=cell_font, text_color="white").grid(
+                row=row_idx, column=1, padx=10, pady=4
+            )
+
+    '''
+    Load all sessions
+    '''
+    def load_sleep_sessions(self):
+        # List JSON files and extract session numbers
+        json_files = [f for f in os.listdir(SUMMARIES_DIR) if f.endswith(".json")]
+        session_ids = sorted([int(f.replace("session_", "").replace(".json", "")) for f in json_files])
+
+        for session_id in session_ids:
+            # Create session's frame 
             session_frame = ctk.CTkFrame(self.scrollable_frame, fg_color="#2C2C3E", corner_radius=15)
             session_frame.pack(fill="x", padx=20, pady=15)
 
-            # Header frame for title and buttons
+            # Header frame
             header_frame = ctk.CTkFrame(session_frame, fg_color="transparent")
             header_frame.pack(fill="x", padx=10, pady=(10, 5))
 
-            # Session title label
+            # Session title
             session_title = ctk.CTkLabel(
                 header_frame,
                 text=f"Session {session_id}",
@@ -184,34 +226,27 @@ class DataVisualization(ctk.CTkFrame):
             )
             session_title.pack(side="left")
 
-            # Count session's images
-            image_count = self.count_session_images(session_id)
-
-            image_count_label = ctk.CTkLabel(
-                header_frame,
-                text=f"Images: {image_count}",
-                font=ctk.CTkFont(size=20, weight="bold"),
-                text_color="#FFFFFF"
+            stats_title = ctk.CTkLabel(
+                session_frame,
+                text="Session Statistics",
+                font=ctk.CTkFont(size=22, weight="bold"),
+                text_color="white"
             )
-            image_count_label.pack(side="left", padx=(20, 0))
-    
-            # Generate PDF report button
-            report_button = ctk.CTkButton(
-                header_frame,
-                text="Generate PDF Report",
-                font=ctk.CTkFont(size=18),
-                fg_color="green",
-                hover_color="#009900",
-                text_color="white",
-                corner_radius=8,
-                width=140,
-                command=lambda sid=session_id: generate_report(sid)
-            )
-            report_button.pack(side="right")
+            stats_title.pack(pady=(10, 5))
 
-            # Delete session button
+            # Read session's resume
+            session_summary = read_session_summary(session_id)
+            if session_summary:
+                # Create table for resume
+                self.create_summary_table(session_frame, session_summary, DATA_LABELS)
+
+            # Container for buttons
+            button_container = ctk.CTkFrame(session_frame, fg_color="transparent")
+            button_container.pack(pady=(5, 10))
+
+            # Delete session
             delete_button = ctk.CTkButton(
-                header_frame,
+                button_container,
                 text="Delete Session",
                 font=ctk.CTkFont(size=18),
                 fg_color="red",
@@ -223,9 +258,24 @@ class DataVisualization(ctk.CTkFrame):
             )
             delete_button.pack(side="right", padx=10)
 
+            # Generate PDF
+            report_button = ctk.CTkButton(
+                button_container,
+                text="Generate PDF Report",
+                font=ctk.CTkFont(size=18),
+                fg_color="green",
+                hover_color="#009900",
+                text_color="white",
+                corner_radius=8,
+                width=140,
+                command=lambda sid=session_id: generate_report(sid)
+            )
+            report_button.pack(side="right")
+
+            # See Images
             see_images_button = ctk.CTkButton(
-                header_frame,
-                text="See Taken Images",
+                button_container,
+                text="See Images",
                 font=ctk.CTkFont(size=18),
                 fg_color="#4a90e2",
                 hover_color="#357ABD",
@@ -236,166 +286,14 @@ class DataVisualization(ctk.CTkFrame):
             )
             see_images_button.pack(side="right", padx=10)
 
-            # Apnea events table or 'No events' label
-            apnea_events = session_df[session_df['Has_Apnea'] == True]
-
-            if not apnea_events.empty:
-                # Apnea events found
-                title_label = ctk.CTkLabel(
-                    session_frame,
-                    text="Apnea Events Detected",
-                    font=ctk.CTkFont(size=25, weight="bold"),
-                    text_color="white"
-                )
-                title_label.pack(pady=(10, 5))
-
-                table_container = ctk.CTkFrame(session_frame, fg_color="transparent")
-                table_container.pack(pady=(5, 20))
-
-                table_frame = ctk.CTkFrame(table_container, fg_color="#1E1E2F", corner_radius=8)
-                table_frame.grid(row=0, column=0)
-
-                # Table headers
-                headers = ["Start Time (s)", "End Time (s)", "Snoring", "Treatment Required"]
-                header_font = ctk.CTkFont(size=14, weight="bold")
-                cell_font = ctk.CTkFont(size=13)
-
-                for i, header in enumerate(headers):
-                    header_label = ctk.CTkLabel(table_frame, text=header, font=header_font, text_color="white")
-                    header_label.grid(row=0, column=i, padx=10, pady=6)
-
-                # Table rows with event data
-                for row_idx, (_, row) in enumerate(apnea_events.iterrows(), start=1):
-                    values = [
-                        f"{row['Start_Time']:.2f}",
-                        f"{row['End_Time']:.2f}",
-                        "Yes" if row['Snoring'] else "No",
-                        "Yes" if row['Treatment_Required'] else "No"
-                    ]
-                    for col_idx, value in enumerate(values):
-                        value_label = ctk.CTkLabel(table_frame, text=value, font=cell_font, text_color="white")
-                        value_label.grid(row=row_idx, column=col_idx, padx=10, pady=4)
-            
-            else:
-                # No apnea events found
-                no_apnea_label = ctk.CTkLabel(
-                    session_frame,
-                    text="No Apnea Events Detected",
-                    font=ctk.CTkFont(size=15, weight="bold"),
-                    text_color="#BBBBBB"
-                )
-                no_apnea_label.pack(pady=(10, 5))
-            
-            # Get the taken images
-            imagesPath = os.path.join(AUDIO_FOLDER, f"Session{session_id}", "Images")
-            imagesNameList = getFileNames(imagesPath)
-            
-            if len(imagesNameList) > 0: # show the list of detected positions with date and time according to the taken images
-                # Title
-                title_label = ctk.CTkLabel(
-                    session_frame,
-                    text="Information of Captured Images",
-                    font=ctk.CTkFont(size=25, weight="bold"),
-                    text_color="white"
-                )
-                title_label.pack(pady=(10, 5))
-
-                # Container
-                table_container = ctk.CTkFrame(session_frame, fg_color="transparent")
-                table_container.pack(pady=(5, 20))
-
-                table_frame = ctk.CTkFrame(table_container, fg_color="#1E1E2F", corner_radius=8)
-                table_frame.grid(row=0, column=0)
-
-                # Table headers
-                headers = ["Date and Time", "Sleeping Position Detected"]
-                header_font = ctk.CTkFont(size=20, weight="bold")
-                cell_font = ctk.CTkFont(size=20)
-
-                for i, header in enumerate(headers):
-                    header_label = ctk.CTkLabel(table_frame, text=header, font=header_font, text_color="white")
-                    header_label.grid(row=0, column=i, padx=10, pady=6)
-
-                # Table rows: iterate through images
-                for row_idx, image_name in enumerate(imagesNameList, start=1):
-                    image_path = os.path.join(imagesPath, image_name)
-
-                    # Get date and time for the picture
-                    dt = getPhotoDatetime(image_path)
-                    name_only, ext = os.path.splitext(image_name)
-                    values = [dt, name_only]
-
-                    for col_idx, value in enumerate(values):
-                        value_label = ctk.CTkLabel(table_frame, text=value, font=cell_font, text_color="white")
-                        value_label.grid(row=row_idx, column=col_idx, padx=10, pady=4)
-
-
-            # Audio waveform plot
+            # Open audio location
             audio_path = os.path.join(AUDIO_FOLDER, f"Session{session_id}", "audio.wav")
             if os.path.exists(audio_path):
-                try:
-                    title_label = ctk.CTkLabel(
-                        session_frame,
-                        text="Recorded Audio",
-                        font=ctk.CTkFont(size=25, weight="bold"),
-                        text_color="white"
-                    )
-                    title_label.pack(pady=(10, 5))
-
-                    with wave.open(audio_path, 'rb') as wf:
-                        framerate = wf.getframerate()
-                        n_frames = wf.getnframes()
-                        audio_signal = wf.readframes(n_frames)
-
-                    audio_data = np.frombuffer(audio_signal, dtype=np.int16)
-                    duration = n_frames / framerate
-                    time_axis = np.linspace(0, duration, num=len(audio_data))
-
-                    fig_wave, ax_wave = plt.subplots(figsize=(5, 1.5), dpi=100)
-                    ax_wave.plot(time_axis, audio_data, color='white', linewidth=0.5)
-                    ax_wave.set_xlim(0, duration)
-                    ax_wave.set_ylim(-max(abs(audio_data)) * 1.1, max(abs(audio_data)) * 1.1)
-                    ax_wave.set_facecolor("#1E1E2F")
-                    fig_wave.patch.set_facecolor('#1E1E2F')
-                    ax_wave.axis('off')
-
-                    waveform_container = ctk.CTkFrame(session_frame, corner_radius=8, fg_color="#1E1E2F")
-                    waveform_container.pack(fill="x", padx=10, pady=(0, 5))
-
-                    canvas_wave = FigureCanvasTkAgg(fig_wave, master=waveform_container)
-                    canvas_wave.draw()
-                    canvas_wave.get_tk_widget().pack(fill="both", expand=True)
-
-                    plt.close(fig_wave)
-
-                except Exception as e:
-                    print(f"[ERROR] Error processing audio: {e}")
-
-                # Button container
-                button_container = ctk.CTkFrame(session_frame, fg_color="transparent")
-                button_container.pack(pady=(5, 10))
-
-                # Button for playing the recorded audio
-                play_button_1 = ctk.CTkButton(
-                    button_container,
-                    text="▶ Play Audio",
-                    font=ctk.CTkFont(size=18),
-                    width=80,
-                    fg_color="#7b4fff",
-                    hover_color="#a175ff",
-                    text_color="white",
-                    corner_radius=10,
-                    command=lambda p=audio_path, b=None: self.toggle_audio(p, b)
-                )
-                play_button_1.configure(command=lambda p=audio_path, b=play_button_1: self.toggle_audio(p, b))
-                play_button_1.pack(side="left", padx=5)
-
-                # Button to open the audio's location
                 play_button_2 = ctk.CTkButton(
                     button_container,
                     text="Open Audio Location",
                     font=ctk.CTkFont(size=18),
-                    width=80,
+                    width=180,
                     fg_color="#7b4fff",
                     hover_color="#a175ff",
                     text_color="white",
@@ -404,16 +302,19 @@ class DataVisualization(ctk.CTkFrame):
                 )
                 play_button_2.pack(side="left", padx=5)
 
-    """
-    Counts how many images (JPG and PNG) in the folder.
-    """
-    def count_session_images(self, session_id):
-        session_dir = os.path.join(AUDIO_FOLDER, f"Session{session_id}","Images")
-        if not os.path.exists(session_dir):
-            return 0
-        return len([f for f in os.listdir(session_dir) if f.lower().endswith((".jpg", ".png"))])
 
-
+    """
+    Read CSV file
+    """
+    def readCSV():
+        # read CSV file
+        if not os.path.exists(CSV_PATH):
+            return
+        
+        df = pd.read_csv(CSV_PATH)
+        df["Session"] = df.groupby((df['Start_Time'] == 0).cumsum()).ngroup() + 1
+        return df
+    
     """
     Opens the folder for the captured images.
     """
@@ -441,55 +342,6 @@ class DataVisualization(ctk.CTkFrame):
             messagebox.showinfo("Info", "The requested folder does not exist.")
 
     """
-    Play or stop audio when the button is clicked.
-    """
-    def toggle_audio(self, path, button):
-        if self.current_play_obj and self.current_play_obj.is_playing():
-            # Stop audio if playing
-            self.current_play_obj.stop()
-            if self.current_button:
-                self.current_button.configure(
-                    text="▶ Play",
-                    command=lambda p=path, b=self.current_button: self.toggle_audio(p, b)
-                )
-            self.current_play_obj = None
-            self.current_button = None
-            return
-
-        try:
-            # Load and play audio
-            wave_obj = sa.WaveObject.from_wave_file(path)
-            play_obj = wave_obj.play()
-
-            self.current_play_obj = play_obj
-            self.current_button = button
-
-            # Update button to 'Stop'
-            button.configure(
-                text="■ Stop",
-                command=lambda p=path, b=button: self.toggle_audio(p, b)
-            )
-
-            self.after(100, self._check_audio_finished)
-        except Exception as e:
-            print(f"[ERROR] Audio could not be played: {e}")
-
-    """
-    Check if audio playback is finished to reset the button.
-    """
-    def _check_audio_finished(self):
-        if self.current_play_obj and not self.current_play_obj.is_playing():
-            if self.current_button:
-                self.current_button.configure(
-                    text="▶ Play",
-                    command=lambda p=self.current_button.cget("command"), b=self.current_button: self.toggle_audio(p, b)
-                )
-            self.current_play_obj = None
-            self.current_button = None
-        else:
-            self.after(100, self._check_audio_finished)
-
-    """
     Delete session data and audio files.
     """
     def delete_session(self, session_id):
@@ -509,6 +361,9 @@ class DataVisualization(ctk.CTkFrame):
             session_audio_folder = os.path.join(AUDIO_FOLDER, f"Session{session_id}")
             if os.path.exists(session_audio_folder):
                 shutil.rmtree(session_audio_folder)
+
+            # Remove Json File
+            delete_session_json(session_id)
 
             messagebox.showinfo("Deleted", f"Session {session_id} has been deleted.")
             self.on_show()
