@@ -53,3 +53,13 @@ Fig 4. Profile.
 ![image](https://github.com/mjcarranza/Apnea-Detector/blob/main/assets/App%20Images/Screenshot%20from%202025-06-18%2011-02-59.png)
 
 Fig 5. Sleep history.
+
+
+# Steps to Create a .desktop Executable
+
+1. Place the file on the Desktop.  
+2. The `.desktop` file must be executable:  
+    chmod +x ~/Desktop/MiApp.desktop
+3. Additionally, the Python script (main.py) must also be executable:
+    chmod +x /home/user/MyProjects/SleepApp/app.py
+Note: The executable is located in the assets folder; it should be copied to the Desktop and the paths must be adjusted accordingly.
