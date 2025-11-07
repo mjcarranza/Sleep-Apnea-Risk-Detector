@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=AOS Risk Detector
+Comment=Iniciar la aplicación de apnea
+Exec=/usr/bin/python3 /home/mario/Documents/GitHub/Apnea-Detector/main.py
+Path=/home/mario/Documents/GitHub/Apnea-Detector/
+Icon=/home/mario/Documents/GitHub/Apnea-Detector/assets/icon.png
+Terminal=true
+Type=Application
+Categories=Utility;
