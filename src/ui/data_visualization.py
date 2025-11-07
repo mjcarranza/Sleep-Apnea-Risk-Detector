@@ -10,7 +10,7 @@ import simpleaudio as sa
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from src.reportGeneration.reportGenerator import generate_report, generate_full_report
-from src.utils.data_utils import read_session_summary, delete_session_json
+from src.utils.data_utils import read_session_summary, delete_session_json, format_duration
 import numpy as np
 import shutil
 
@@ -24,10 +24,10 @@ SUMMARIES_DIR = "data/summaries"
 DATA_LABELS = {
     "eventsAOS": "Apnea events detected",
     "duration": "Total duration of apneas (s)",
-    "supino": "Supine postures detected",
-    "lateral": "Lateral postures detected",
-    "prono": "Prone postures detected",
-    "fetal": "Fetal postures detected"
+    "Supine": "Supine postures detected",
+    "Lateral": "Lateral postures detected",
+    "Prone": "Prone postures detected",
+    "Fetal": "Fetal postures detected"
 }
 
 """
@@ -178,27 +178,32 @@ class DataVisualization(ctk.CTkFrame):
         table_frame.grid(row=0, column=0)
 
         headers = ["Data", "Value"]
-        header_font = ctk.CTkFont(size=20, weight="bold")  # Solo headers en negrita
-        cell_font = ctk.CTkFont(size=20)                  # Filas normales
+        header_font = ctk.CTkFont(size=20, weight="bold")
+        cell_font = ctk.CTkFont(size=20)
 
         # Table headers
         for i, header in enumerate(headers):
-            header_label = ctk.CTkLabel(table_frame, text=header, font=header_font, text_color="white")
-            header_label.grid(row=0, column=i, padx=10, pady=6)
+            ctk.CTkLabel(
+                table_frame, text=header, font=header_font, text_color="white"
+            ).grid(row=0, column=i, padx=10, pady=6)
 
         # Table rows
         for row_idx, key in enumerate(data_labels.keys(), start=1):
             descriptive_name = data_labels[key]
-            value = session_summary.get(key, 0)  # Default 0
+            value = session_summary.get(key, 0)
 
-            # Columna Data
-            ctk.CTkLabel(table_frame, text=descriptive_name, font=cell_font, text_color="white").grid(
-                row=row_idx, column=0, padx=10, pady=4
-            )
-            # Columna Value
-            ctk.CTkLabel(table_frame, text=str(value), font=cell_font, text_color="white").grid(
-                row=row_idx, column=1, padx=10, pady=4
-            )
+            # ✅ Si es duración, convertir a HH:MM:SS
+            if key.lower() == "duration":
+                value = format_duration(int(value))
+
+            ctk.CTkLabel(
+                table_frame, text=descriptive_name, font=cell_font, text_color="white"
+            ).grid(row=row_idx, column=0, padx=10, pady=4)
+
+            ctk.CTkLabel(
+                table_frame, text=str(value), font=cell_font, text_color="white"
+            ).grid(row=row_idx, column=1, padx=10, pady=4)
+
 
     '''
     Load all sessions

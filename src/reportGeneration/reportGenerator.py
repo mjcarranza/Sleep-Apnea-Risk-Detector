@@ -13,7 +13,7 @@ from reportlab.platypus import (SimpleDocTemplate, Paragraph, Spacer, Table, Tab
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib import colors
 from src.recommendation.recommendation_engine import generate_recommendations
-from src.dataAcquisition.cameraInput import getPhotoDatetime, getFileNames
+from src.utils.data_utils import read_session_summary, format_duration
 
 # Constants for data paths and output directory
 JSON_PATH = "data/patientData/patient_data.json"
@@ -41,10 +41,6 @@ def generate_report(session_number):
 
     # Analyze the session 
     result = analyze_sleep_session(session_df)
-
-    # Add image predictions as table 
-    imagesPath = os.path.join(AUDIO_FOLDER, f"Session{session_number}", "Images")
-    imagesNameList = getFileNames(imagesPath)
 
     # Save path dialog
     root = tk.Tk()
@@ -147,38 +143,28 @@ def generate_report(session_number):
     elements.append(Spacer(1, 20))
 
 
-    # Captured images' information
-    elements.append(Paragraph("Information of Captured Images", styles["Heading3"]))
-    elements.append(Spacer(1, 10))
+    session_summary_json = read_session_summary(session_number)
 
-    # Headings
-    headers = ["Date and Time", "Sleeping Position Detected"]
-    data = [headers]
+    summary_data = [
+        ["Data", "Value"],
+        ["Supine postures detected", session_summary_json.get("Supine", 0)],
+        ["Lateral postures detected", session_summary_json.get("Lateral", 0)],
+        ["Prone postures detected", session_summary_json.get("Prone", 0)],
+        ["Fetal postures detected", session_summary_json.get("Fetal", 0)]
+    ]
 
-    # Add rows for captured images
-    for image_name in imagesNameList:
-        image_path = os.path.join(imagesPath, image_name)
-
-        # Get date and time of the file
-        dt = getPhotoDatetime(image_path)
-        name_only, _ = os.path.splitext(image_name)
-
-        data.append([dt, name_only])
-
-    # Create table
-    img_table = Table(data, hAlign="LEFT", colWidths=[180, 180])
-    img_table.setStyle(TableStyle([
+    summary_table = Table(summary_data, hAlign="LEFT", colWidths=[180, 110])
+    summary_table.setStyle(TableStyle([
         ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#4A4A6A")),
         ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
         ("ALIGN", (0, 0), (-1, -1), "CENTER"),
         ("GRID", (0, 0), (-1, -1), 0.25, colors.grey),
-        ("FONTSIZE", (0, 0), (-1, -1), 9),
-        ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.HexColor("#F5F5F5"), colors.whitesmoke]),
+        ("FONTSIZE", (0, 0), (-1, -1), 9)
     ]))
 
-    elements.append(img_table)
+    elements.append(Paragraph("Posture Detection Summary", styles["Heading3"]))
+    elements.append(summary_table)
     elements.append(Spacer(1, 20))
-
 
 
     # Include Graphs

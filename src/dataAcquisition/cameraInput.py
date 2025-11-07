@@ -16,7 +16,7 @@ ALARM_SOUNDS_DIR = "assets/alarm_sounds"
 # Return true for a bad position or false for a good one.
 # Return the actual sleeping position
 '''
-def takePhoto():
+def takePhoto(session_num, start_time_seconds):
     # Use webcam
     cap = cv2.VideoCapture("/dev/video0") #use video0 or video2
 
@@ -43,6 +43,7 @@ def takePhoto():
 
     # Get date and time
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    segment_time_str = f"Start Time: {int(start_time_seconds)}s"
 
     # Write date and time in the photo
     font = cv2.FONT_HERSHEY_SIMPLEX
@@ -58,8 +59,11 @@ def takePhoto():
 
     cv2.putText(frame, timestamp, (x, y), font, font_scale, color, thickness, cv2.LINE_AA)
 
+    # Position for segment time (top-left)
+    cv2.putText(frame, segment_time_str, (margin, margin + 20), font, font_scale, color, thickness, cv2.LINE_AA)
+
+
     # Get actual session folder direction
-    session_num = get_next_session_number()
     session_dir = os.path.join("data", "raw", f"Session{session_num}", "Images")
     os.makedirs(session_dir, exist_ok=True)
 

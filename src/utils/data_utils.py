@@ -82,3 +82,12 @@ def delete_session_json(session_number):
     else:
         print(f"File {file_path} not found.")
         return False
+
+"""
+Format session duration
+"""
+def format_duration(seconds):
+    hours = seconds // 3600
+    minutes = (seconds % 3600) // 60
+    seconds = seconds % 60
+    return f"{int(hours):02d}:{int(minutes):02d}:{int(seconds):02d}"

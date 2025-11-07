@@ -24,6 +24,7 @@ treatment_model = joblib.load("data/models/treatment_required_model.pkl")
 
 # File paths
 output_csv = "data/processed/processed_patient_data.csv"
+patient_data_json = "data/patientData/patient_data.json"
 summaries_dir = "data/summaries"
 
 
@@ -106,14 +107,15 @@ def process_audio_and_update_dataset(wav_path, finished, session_num, sample_rat
     
     all_rows = []
 
-    with open(patient_data, "r") as file:
+    with open(patient_data_json, "r") as file:
         data = json.load(file)
         patient_data = data["patient"]
 
     age = int(patient_data["age"])
     gender_str = patient_data["sex"]
     bmi = float(patient_data["bmi"])
-    session = int(patient_data["recordedSessions"])
+    session = int(session_num)
+
     gender = 1 if gender_str.lower() == "female" else 0 if gender_str.lower() == "male" else 2
 
     positionList = []
@@ -148,7 +150,8 @@ def process_audio_and_update_dataset(wav_path, finished, session_num, sample_rat
             # Image capture if needed
             if (not finished) and (has_snoring or has_apnea):
                 print("[INFO]: Breathing problems detected. Taking a picture...")
-                img_dir = takePhoto()
+                current_segment_time = i // sample_rate
+                img_dir = takePhoto(session_num, current_segment_time)
                 prediction = predict_posture(img_dir)
                 print(f"[INFO] Posture prediction: {prediction}")
                 imgIdx = get_next_photo_number() - 1
