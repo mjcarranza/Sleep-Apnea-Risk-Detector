@@ -29,6 +29,7 @@ The application allows users to monitor their sleep and detect possible apnea ep
 * AI classification models are also used:
   - Apnea/No Apnea Detection: This model uses RandomForestClassifier to identify patterns of positive OSA cases by combining parameters such as age, BMI, snoring signals, etc.
   - Treatment Need Prediction: This model uses RandomForestClassifier to estimate if treatment is required for the patient. Like the previously described model, it relies on parameters such as age, BMI, and others, as well as whether positive or negative OSA cases exist.
+  - Sleep posture prediction: This model uses RandomForestClassifier to estimate the body position from a captured image. It works using the Mediapipe library which detects the location of up to 32 different joints in the body, this is used by the model to detect the pose. 
 
 * A patient profile form is used to determine their physical condition and habits and to identify personalized recommendations based on the parameters provided by the user.
 * A sleep session history is available, which allows visualization of processed data, playback of recorded audio, and report generation with data related to the sleep session, in addition to the option to delete a specific session and generate a complete report covering all sleep sessions.
@@ -36,20 +37,52 @@ The application allows users to monitor their sleep and detect possible apnea ep
 
 * A screen is used to display the terms and conditions of use, which must be accepted before using the app.
 
+## Image Capture Module
+
+The application integrates an image capture module that allows the acquisition of visual data using an external camera. This module is intended for:
+- Monitoring sleeping posture.
+- Assisting in apnea risk assessment by analyzing sleeping postures.
+- Documenting the sleep environment for further analysis.
+
+Captured images will be stored securely on the local device and optionally linked to a specific sleep session. The module ensures user privacy by allowing images to be encrypted and accessed only through the application interface.
+### Image Capture Flow
+
+1. User starts a sleep session from the recording window.
+2. The camera captures images at predefined intervals.
+3. Images are processed and stored in the corresponding sleep session folder.
+4. AI algorithms analyze posture, facial features, or environmental factors if applicable.
+5. Results are displayed in the session history along with audio features.
+
+![image](https://github.com/mjcarranza/Apnea-Detector/blob/main/assets/App%20Images/joints.png)
+
+Figure 2. Mean joints used for the prediction model.
+### Data Storage and Privacy
+
+- Images are stored in the `data/images/Session#` folder, linked to the session number.
+- No images are uploaded externally; all processing is local.
+- Users can delete images manually or automatically after each session.
+
+### Future Enhancements
+
+- Automatic posture detection during sleep.
+- Integration with AI models for facial analysis to detect breathing anomalies.
+- Real-time alerts for risky sleeping positions.
+
+
 ## Application Appendices
 
 ![image](https://github.com/mjcarranza/Apnea-Detector/blob/main/assets/App%20Images/Screenshot%20from%202025-06-18%2010-28-47.png)
 
-Fig 2. Main window.
+Fig 3. Main window.
 
 ![image](https://github.com/mjcarranza/Apnea-Detector/blob/main/assets/App%20Images/Screenshot%20from%202025-06-18%2010-28-54.png)
 
-Fig 3. Recording window.
+Fig 4. Recording window.
 
 ![image](https://github.com/mjcarranza/Apnea-Detector/blob/main/assets/App%20Images/Screenshot%20from%202025-06-18%2010-44-52.png)
 
-Fig 4. Profile.
+Fig 5. Profile.
 
 ![image](https://github.com/mjcarranza/Apnea-Detector/blob/main/assets/App%20Images/Screenshot%20from%202025-06-18%2011-02-59.png)
 
-Fig 5. Sleep history.
+Fig 6. Sleep history.
